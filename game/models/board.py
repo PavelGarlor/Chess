@@ -125,17 +125,15 @@ class Board:
     # -------------------- GRID TO PIXEL --------------------
     def get_position_from_grid(self, grid_x: int, grid_y: int) -> Tuple[float, float]:
         """
-        Convert board grid coordinates (0-7, 0-7) to pixel coordinates.
-        grid_x = column (0 = left)
-        grid_y = row    (0 = bottom)
+        Return the bottom-center pixel of the square.
         """
         pixel_x = self.board_x + grid_x * self.square_size + self.square_size / 2
-        pixel_y = self.board_y + (7 - grid_y) * self.square_size + self.square_size / 2
+        pixel_y = self.board_y + (7 - grid_y + 1) * self.square_size
         return pixel_x, pixel_y
 
     # -------------------- BOARD MANAGEMENT --------------------
     def place_piece(self, piece: Piece, grid_pos: Tuple[int, int]):
-        """Place a piece on the board"""
+        piece.rescale_to_square(self.square_size)
         self.positions[grid_pos] = piece
         if piece not in self.pieces:
             self.pieces.append(piece)

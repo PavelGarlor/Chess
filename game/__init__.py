@@ -22,7 +22,7 @@ square_size = 0  # will be computed later
 # --------------------
 window_width = screen.get_width()
 window_height = screen.get_height()
-chessboard_size = min(window_width, window_height) * 0.9
+chessboard_size = min(window_width, window_height) * 0.8
 chessboard_x = (window_width - chessboard_size) / 2
 chessboard_y = (window_height - chessboard_size) / 2
 square_size = chessboard_size / 8

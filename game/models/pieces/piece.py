@@ -7,38 +7,40 @@ ASSETS_PATH = "assets/pieces/3Dpieces"  # folder with piece images
 
 
 class Piece(ABC):
-    _images_cache = {}  # shared cache so we don't load the same image multiple times
+    _images_cache = {}
 
     def __init__(self, piece_type: str, color: str):
         self.type = piece_type
-        self.color = color  # "white" or "black"
-        self.image = self.load_image()
-
-    @abstractmethod
-    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
-        """Return all possible moves from the given position."""
-        pass
+        self.color = color
+        self.original_image = self.load_image()
+        self.image = self.original_image
 
     def load_image(self) -> pygame.Surface:
-        """Load the piece image based on its type and color."""
-        filename = f"{self.color[0]}{self.type[0]}.png"  # e.g., wp.png
-        path = os.path.join(ASSETS_PATH, filename)
+        filename = f"{self.color[0]}{self.type[0]}.png"
+        path = os.path.join("assets/pieces/3Dpieces", filename)
 
-        # Use cache if already loaded
         if path in Piece._images_cache:
             return Piece._images_cache[path]
 
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Piece image not found: {path}")
+        img = pygame.image.load(path).convert_alpha()
+        Piece._images_cache[path] = img
+        return img
 
-        image = pygame.image.load(path).convert_alpha()
-        Piece._images_cache[path] = image
-        return image
+    def rescale_to_square(self, square_size: float):
+        w, h = self.original_image.get_size()
+        scale = square_size / w
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        self.image = pygame.transform.smoothscale(
+            self.original_image, (new_w, new_h)
+        )
 
-    def draw(self, surface: pygame.Surface, position: Tuple[float, float]):
-        """Draw the piece centered at the given pixel position."""
-        rect = self.image.get_rect(center=position)
+    def draw(self, surface, position: tuple[float, float]):
+        x, y = position
+        rect = self.image.get_rect()
+        rect.midbottom = (int(x), int(y))
         surface.blit(self.image, rect)
+
 
 
 class Pawn(Piece):
