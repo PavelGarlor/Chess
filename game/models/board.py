@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 import pygame
 
 from game.config import *
-from game.models.pieces.piece import Piece
+from game.models.pieces.piece import Piece, Pawn, Rook, Knight, King, Queen, Bishop
 from game.models.square import Square
 
 
@@ -53,6 +53,8 @@ class Board:
                 target_x = board_x + j * square_size
                 target_y = board_y + i * square_size
                 self.squares.append(Square(color, target_x, target_y, square_size))
+
+        self.parse_fen_to_board()
 
     # -------------------- UPDATES --------------------
     def update(self, current_time):
@@ -147,3 +149,41 @@ class Board:
         if captured:
             self.pieces.remove(captured)
         self.positions[to_pos] = piece
+
+    def parse_fen_to_board(self):
+        # "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        fen = self.current_FEN_position.split()[0]
+
+        i = self.size - 1  # row (top to bottom in FEN)
+        j = 0  # column (left to right)
+
+        for current_char in fen:
+            if current_char == "/":
+                i -= 1
+                j = 0
+                continue
+
+            if current_char.isdigit():
+                j += int(current_char)  # skip empty squares
+                continue
+
+            # Otherwise it's a piece
+            color = "white" if current_char.isupper() else "black"
+            piece_char = current_char.lower()
+
+            if piece_char == "p":
+                self.place_piece(Pawn(color), (j, i))
+            elif piece_char == "r":
+                self.place_piece(Rook(color), (j, i))
+            elif piece_char == "n":
+                self.place_piece(Knight(color), (j, i))
+            elif piece_char == "k":
+                self.place_piece(King(color), (j, i))
+            elif piece_char == "q":
+                self.place_piece(Queen(color), (j, i))
+            elif piece_char == "b":
+                self.place_piece(Bishop(color), (j, i))
+
+            j += 1
+
+
