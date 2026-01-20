@@ -3,7 +3,7 @@ LIGHT_SQ = (192, 209, 196)
 DARK_SQ = (13, 74, 27)
 
 # Animation settings
-animation_duration = 0.3
+animation_duration = 0.2
 spawn_interval = 0.05
 # Colors
 BACKGROUND_COLOR = (9, 18, 33)
