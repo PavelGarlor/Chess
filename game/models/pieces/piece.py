@@ -43,9 +43,40 @@ class Piece(ABC):
 
 class Pawn(Piece):
     def __init__(self, color: str):
-        super().__init__("pawn", color)
+        super().__init__("p", color)
 
     def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
         x, y = position
         direction = 1 if self.color == "white" else -1
         return [(x, y + direction)]
+
+class Rook(Piece):
+    def __init__(self, color: str):
+        super().__init__("r", color)
+
+    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+        pass
+
+class Bishop(Piece):
+    def __init__(self, color: str):
+        super().__init__("b", color)
+    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+        pass
+
+class Knight(Piece):
+    def __init__(self, color: str):
+        super().__init__("n", color)
+    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+        pass
+
+class King(Piece):
+    def __init__(self, color: str):
+        super().__init__("k", color)
+    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+        pass
+
+class Queen(Piece):
+    def __init__(self, color: str):
+        super().__init__("q", color)
+    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+        pass
