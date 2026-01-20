@@ -3,6 +3,7 @@ import time
 
 from game.config import *
 from game.models.board import Board
+from game.models.pieces.piece import Pawn
 from game.models.square import Square
 
 pygame.init()
@@ -26,7 +27,9 @@ chessboard_x = (window_width - chessboard_size) / 2
 chessboard_y = (window_height - chessboard_size) / 2
 square_size = chessboard_size / 8
 
-board = Board(ROWS, COLS, chessboard_x, chessboard_y, square_size)
+board = Board( chessboard_x, chessboard_y, square_size)
+board.place_piece(Pawn("white"),(0,0))
+board.place_piece(Pawn("white"),(0,1))
 
 # --------------------
 # MAIN LOOP

@@ -21,12 +21,14 @@ class Square:
         if self.spawn_time is None:
             self.spawn_time = current_time
 
-        individual_delay = idx * (fall_duration)
+        individual_delay = idx * fall_duration
+
         if fall_start_time is None or current_time < fall_start_time + individual_delay:
-            # hover dark
-            self.current_color = interpolate_color((0,0,0), self.color, dark_factor)
+            # Hover/dark stage
+            self.current_color = interpolate_color((0, 0, 0), self.color, dark_factor)
             self.current_pos = (self.start_x, self.start_y)
             self.current_size = self.start_size
+            return False  # animation not finished yet
         else:
             t_anim = min((current_time - fall_start_time - individual_delay) / fall_duration, 1)
             self.current_pos = (
@@ -35,13 +37,16 @@ class Square:
             )
             self.current_size = self.start_size + (self.target_size - self.start_size) * t_anim
             self.current_color = interpolate_color(
-                interpolate_color((0,0,0), self.color, dark_factor), self.color, t_anim
+                interpolate_color((0, 0, 0), self.color, dark_factor), self.color, t_anim
             )
+            return t_anim >= 1  # animation finished when t_anim reaches 1
 
     def draw(self, surface):
         pygame.draw.rect(surface, self.current_color,
                          pygame.Rect(self.current_pos[0], self.current_pos[1],
                                      self.current_size, self.current_size))
+
+
 
 
 
