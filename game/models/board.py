@@ -112,8 +112,12 @@ class Board:
             self.draw_pieces(surface)
 
     def draw_pieces(self, surface):
-        # Loop over all pieces in positions dict
-        for (grid_x, grid_y), piece in self.positions.items():
+        # Sort by row (grid_y), higher rows first
+        for (grid_x, grid_y), piece in sorted(
+                self.positions.items(),
+                key=lambda item: item[0][1],  # item[0] is (grid_x, grid_y)
+                reverse=True
+        ):
             if piece:
                 position = self.get_position_from_grid(grid_x, grid_y)
                 piece.draw(surface, position)
