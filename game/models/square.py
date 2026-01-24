@@ -1,8 +1,4 @@
-# --------------------
-# SQUARE CLASS
-# --------------------
 import pygame
-
 from game import size_multiplier, y_offset, x_offset, dark_factor
 
 
@@ -11,11 +7,23 @@ class Square:
         self.color = color
         self.target_x = target_x
         self.target_y = target_y
+
+        # Animation start positions
         self.start_x = target_x + x_offset
         self.start_y = target_y - y_offset
         self.start_size = size * size_multiplier
         self.target_size = size
+
+        # Spawn time for animation
         self.spawn_time = None
+
+        # ------------------------
+        # Initialize "current" state
+        # This ensures draw() never crashes
+        # ------------------------
+        self.current_color = self.color
+        self.current_pos = (self.target_x, self.target_y)
+        self.current_size = self.target_size
 
     def update(self, current_time, fall_start_time, idx, fall_duration):
         if self.spawn_time is None:
@@ -24,7 +32,7 @@ class Square:
         individual_delay = idx * fall_duration
 
         if fall_start_time is None or current_time < fall_start_time + individual_delay:
-            # Hover/dark stage
+            # Hover/dark stage before animation
             self.current_color = interpolate_color((0, 0, 0), self.color, dark_factor)
             self.current_pos = (self.start_x, self.start_y)
             self.current_size = self.start_size
@@ -42,13 +50,12 @@ class Square:
             return t_anim >= 1  # animation finished when t_anim reaches 1
 
     def draw(self, surface):
-        pygame.draw.rect(surface, self.current_color,
-                         pygame.Rect(self.current_pos[0], self.current_pos[1],
-                                     self.current_size, self.current_size))
-
-
-
-
+        # Always safe to draw; current_color is initialized in __init__
+        pygame.draw.rect(
+            surface,
+            self.current_color,
+            pygame.Rect(self.current_pos[0], self.current_pos[1], self.current_size, self.current_size)
+        )
 
 
 # --------------------

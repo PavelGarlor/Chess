@@ -2,9 +2,15 @@
 LIGHT_SQ = (192, 209, 196)
 DARK_SQ = (13, 74, 27)
 
+# ---------------------------
+# Game animation settings
+# ---------------------------
 # Animation settings
 animation_duration = 0.2
 spawn_interval = 0.05
+ANIMATE_BOARD = True       # Should the board squares animate in?
+ANIMATE_PIECES = True# Should the pieces animate from above?
+
 # Colors
 BACKGROUND_COLOR = (9, 18, 33)
 
@@ -16,3 +22,4 @@ y_offset = 30
 size_multiplier = 1.2
 
 ROWS, COLS = 8, 8
+
