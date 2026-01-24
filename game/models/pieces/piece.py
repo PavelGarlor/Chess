@@ -14,6 +14,17 @@ class Piece(ABC):
         self.color = color
         self.original_image = self.load_image()
         self.image = self.original_image
+        self.color = color
+        self.pixel_pos = None
+
+        self.color = color
+        self.spawn_position = None
+        self.target_position = None
+
+        self.spawn_time: float | None = None
+        self.delay: float = 0.0
+        self.has_arrived = False
+
 
     def load_image(self) -> pygame.Surface:
         filename = f"{self.color[0]}{self.type[0]}.png"
