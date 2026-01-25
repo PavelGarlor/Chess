@@ -6,7 +6,7 @@ class BoardState:
     SIZE = 8
 
     def __init__(self, fen: str):
-        self.current_turn = "black"
+        self.current_turn = "white"
         self.fen = fen
         self.positions: dict[tuple[int, int], Piece] = {}
         self._parse_fen()

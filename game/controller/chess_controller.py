@@ -70,6 +70,5 @@ class ChessController:
             captured_view: PieceView = self.view.piece_views[captured]
             captured_view.start_capture()
 
-    # ----------------------------
-    # HELPERS
-    # ----------------------------
+    def pixel_to_grid(self, position):
+        pass
