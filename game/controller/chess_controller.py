@@ -19,8 +19,8 @@ class ChessController:
     # MAIN INPUT HANDLER
     # ----------------------------
     def handle_mouse_click(self, mouse_pos: Tuple[int, int]):
-        grid_pos = self.pixel_to_grid(mouse_pos)
-        if grid_pos is None:
+        grid_pos = self.view.pixel_to_grid(mouse_pos)
+        if not grid_pos:
             return
 
         piece = self.state.get_piece(grid_pos)
@@ -28,10 +28,18 @@ class ChessController:
         if piece and piece.color == self.current_turn:
             # Select piece
             self.selected_pos = grid_pos
+            self.view.highlight_selected = grid_pos
+            # Ask the piece for its allowed moves
+            self.view.highlight_moves = piece.get_allowed_moves(grid_pos, self.state)
+
         elif self.selected_pos:
-            # Attempt to move selected piece
-            self.attempt_move(self.selected_pos, grid_pos)
+            if grid_pos in self.view.highlight_moves:
+                # Valid move
+                self.attempt_move(self.selected_pos, grid_pos)
+            # Clear selection
             self.selected_pos = None
+            self.view.highlight_selected = None
+            self.view.highlight_moves = []
 
     # ----------------------------
     # MOVE LOGIC
@@ -70,5 +78,25 @@ class ChessController:
             captured_view: PieceView = self.view.piece_views[captured]
             captured_view.start_capture()
 
-    def pixel_to_grid(self, position):
-        pass
+    def pixel_to_grid(self, position: Tuple[int, int]) -> Optional[Tuple[int, int]]:
+        """
+        Converts mouse pixel coordinates to grid coordinates (0-7, 0-7).
+        Returns None if clicked outside the board.
+        """
+        mouse_x, mouse_y = position
+        bx, by = self.view.board_x, self.view.board_y
+        sq = self.view.square_size
+        size = self.view.SIZE
+
+        # Check if inside board bounds
+        if not (bx <= mouse_x <= bx + sq * size and by <= mouse_y <= by + sq * size):
+            return None
+
+        # Convert to 0-7 grid
+        grid_x = int((mouse_x - bx) // sq)
+        grid_y = int((mouse_y - by) // sq)
+
+        # Flip vertically because pixel y=0 is top of screen
+        grid_y = size - 1 - grid_y
+
+        return grid_x, grid_y

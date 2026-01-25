@@ -1,6 +1,6 @@
 import random
 import time
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 import pygame
 
@@ -52,6 +52,8 @@ class BoardView:
 
         self._create_squares()
         self._create_piece_views()
+        self.highlight_selected: Optional[Tuple[int, int]] = None
+        self.highlight_moves: list[Tuple[int, int]] = []
 
     # ------------------------------------------------------------------
     # UPDATE
@@ -103,9 +105,14 @@ class BoardView:
         # if self.view_state == self.STATE_STABLE:
         #     self._draw_border(surface)
 
+        # Draw squares
         for square in self.squares[: self.visible_square_count]:
             square.draw(surface)
 
+        # Draw highlights
+        self._draw_highlights(surface)
+
+        # Draw pieces
         self._draw_pieces(surface)
 
     def _draw_border(self, surface: pygame.Surface) -> None:
@@ -120,6 +127,26 @@ class BoardView:
                 total_size + self.BORDER_PADDING * 2,
             ),
         )
+
+    def _draw_highlights(self, surface: pygame.Surface):
+        if self.highlight_selected:
+            x, y = self.highlight_selected
+            rect = pygame.Rect(
+                self.board_x + x * self.square_size,
+                self.board_y + (self.SIZE - 1 - y) * self.square_size,
+                self.square_size,
+                self.square_size,
+            )
+            pygame.draw.rect(surface, (90, 242, 150, 104), rect)  #  overlay
+
+        for x, y in self.highlight_moves:
+            rect = pygame.Rect(
+                self.board_x + x * self.square_size,
+                self.board_y + (self.SIZE - 1 - y) * self.square_size,
+                self.square_size,
+                self.square_size,
+            )
+            pygame.draw.rect(surface, (0, 255, 0, 80), rect)  # green overlay
 
     def _draw_pieces(self, surface: pygame.Surface) -> None:
         """Draw pieces according to turn orientation while keeping animations"""
@@ -161,6 +188,28 @@ class BoardView:
     # ------------------------------------------------------------------
     # HELPERS
     # ------------------------------------------------------------------
+    def pixel_to_grid(self, position: Tuple[int, int]) -> Optional[Tuple[int, int]]:
+        """
+        Convert mouse pixel coordinates to board grid coordinates (0-7, 0-7).
+        Returns None if clicked outside the board.
+        """
+        mouse_x, mouse_y = position
+        bx, by = self.board_x, self.board_y
+        sq = self.square_size
+        size = self.SIZE
+
+        # Check bounds
+        if not (bx <= mouse_x <= bx + sq * size and by <= mouse_y <= by + sq * size):
+            return None
+
+        grid_x = int((mouse_x - bx) // sq)
+        grid_y = int((mouse_y - by) // sq)
+
+        # Flip vertically because y=0 is top of screen
+        grid_y = size - 1 - grid_y
+
+        return grid_x, grid_y
+
     def grid_to_pixel(self, grid_x: int, grid_y: int) -> tuple[float, float]:
         """
         Returns the bottom-left pixel coordinates of a square (used for PieceView),

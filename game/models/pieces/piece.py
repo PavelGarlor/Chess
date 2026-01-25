@@ -11,7 +11,7 @@ class Piece(ABC):
         self.position: Position | None = None
 
     @abstractmethod
-    def get_pseudo_legal_moves(
+    def get_allowed_moves(
         self,
         position: Position,
         board_state,
@@ -20,7 +20,7 @@ class Piece(ABC):
         Returns all moves ignoring check/checkmate.
         To be implemented later.
         """
-        pass
+        return []
 
     def enemy_color(self) -> str:
         return "black" if self.color == "white" else "white"
@@ -30,45 +30,45 @@ class Piece(ABC):
 # PAWN
 # -------------------------------------------------
 class Pawn(Piece):
-    def get_pseudo_legal_moves(self, position, board_state):
-        pass
+    def get_allowed_moves(self, position, board_state):
+        return []
 
 
 # -------------------------------------------------
 # ROOK
 # -------------------------------------------------
 class Rook(Piece):
-    def get_pseudo_legal_moves(self, position, board_state):
-        pass
+    def get_allowed_moves(self, position, board_state):
+        return []
 
 
 # -------------------------------------------------
 # BISHOP
 # -------------------------------------------------
 class Bishop(Piece):
-    def get_pseudo_legal_moves(self, position, board_state):
-        pass
+    def get_allowed_moves(self, position, board_state):
+        return []
 
 
 # -------------------------------------------------
 # KNIGHT
 # -------------------------------------------------
 class Knight(Piece):
-    def get_pseudo_legal_moves(self, position, board_state):
-        pass
+    def get_allowed_moves(self, position, board_state):
+        return []
 
 
 # -------------------------------------------------
 # QUEEN
 # -------------------------------------------------
 class Queen(Piece):
-    def get_pseudo_legal_moves(self, position, board_state):
-        pass
+    def get_allowed_moves(self, position, board_state):
+        return []
 
 
 # -------------------------------------------------
 # KING
 # -------------------------------------------------
 class King(Piece):
-    def get_pseudo_legal_moves(self, position, board_state):
-        pass
+    def get_allowed_moves(self, position, board_state):
+        return []

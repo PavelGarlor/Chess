@@ -33,6 +33,18 @@ class BoardState:
 
         return captured
 
+    def get_allowed_moves(self, position, board_state):
+        x, y = position
+        moves = []
+        direction = 1 if self.color == "white" else -1
+        target = (x, y + direction)
+        if 0 <= target[1] < board_state.SIZE and not board_state.get_piece(target):
+            moves.append(target)
+
+        #after obtaining all the moves that the piece can do we filter the legals
+
+        return moves
+
     def _parse_fen(self) -> None:
         board_fen = self.fen.split()[0]
 
