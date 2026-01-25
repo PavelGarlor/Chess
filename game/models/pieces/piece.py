@@ -1,95 +1,74 @@
-import pygame
 from abc import ABC, abstractmethod
-from typing import Tuple, List
-import os
+from typing import List, Tuple
 
-ASSETS_PATH = "assets/pieces/3Dpieces"  # folder with piece images
+
+Position = Tuple[int, int]
 
 
 class Piece(ABC):
-    _images_cache = {}
-
-    def __init__(self, piece_type: str, color: str):
-        self.type = piece_type
+    def __init__(self, color: str):
         self.color = color
-        self.original_image = self.load_image()
-        self.image = self.original_image
-        self.color = color
-        self.pixel_pos = None
+        self.position: Position | None = None
 
-        self.color = color
-        self.spawn_position = None
-        self.target_position = None
+    @abstractmethod
+    def get_pseudo_legal_moves(
+        self,
+        position: Position,
+        board_state,
+    ) -> List[Position]:
+        """
+        Returns all moves ignoring check/checkmate.
+        To be implemented later.
+        """
+        pass
 
-        self.spawn_time: float | None = None
-        self.delay: float = 0.0
-        self.has_arrived = False
-
-
-    def load_image(self) -> pygame.Surface:
-        filename = f"{self.color[0]}{self.type[0]}.png"
-        path = os.path.join("assets/pieces/3Dpieces", filename)
-
-        if path in Piece._images_cache:
-            return Piece._images_cache[path]
-
-        img = pygame.image.load(path).convert_alpha()
-        Piece._images_cache[path] = img
-        return img
-
-    def rescale_to_square(self, square_size: float):
-        w, h = self.original_image.get_size()
-        scale = square_size / w
-        new_w = int(w * scale)
-        new_h = int(h * scale)
-        self.image = pygame.transform.smoothscale(
-            self.original_image, (new_w, new_h)
-        )
-
-    def draw(self, surface, position: tuple[float, float]):
-        x, y = position
-        rect = self.image.get_rect()
-        rect.midbottom = (int(x), int(y))
-        surface.blit(self.image, rect)
+    def enemy_color(self) -> str:
+        return "black" if self.color == "white" else "white"
 
 
-
+# -------------------------------------------------
+# PAWN
+# -------------------------------------------------
 class Pawn(Piece):
-    def __init__(self, color: str):
-        super().__init__("p", color)
+    def get_pseudo_legal_moves(self, position, board_state):
+        pass
 
-    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
-        x, y = position
-        direction = 1 if self.color == "white" else -1
-        return [(x, y + direction)]
 
+# -------------------------------------------------
+# ROOK
+# -------------------------------------------------
 class Rook(Piece):
-    def __init__(self, color: str):
-        super().__init__("r", color)
-
-    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+    def get_pseudo_legal_moves(self, position, board_state):
         pass
 
+
+# -------------------------------------------------
+# BISHOP
+# -------------------------------------------------
 class Bishop(Piece):
-    def __init__(self, color: str):
-        super().__init__("b", color)
-    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+    def get_pseudo_legal_moves(self, position, board_state):
         pass
 
+
+# -------------------------------------------------
+# KNIGHT
+# -------------------------------------------------
 class Knight(Piece):
-    def __init__(self, color: str):
-        super().__init__("n", color)
-    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+    def get_pseudo_legal_moves(self, position, board_state):
         pass
 
-class King(Piece):
-    def __init__(self, color: str):
-        super().__init__("k", color)
-    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
-        pass
 
+# -------------------------------------------------
+# QUEEN
+# -------------------------------------------------
 class Queen(Piece):
-    def __init__(self, color: str):
-        super().__init__("q", color)
-    def moves(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
+    def get_pseudo_legal_moves(self, position, board_state):
+        pass
+
+
+# -------------------------------------------------
+# KING
+# -------------------------------------------------
+class King(Piece):
+    def get_pseudo_legal_moves(self, position, board_state):
         pass

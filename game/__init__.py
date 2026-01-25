@@ -1,51 +1,84 @@
 import sys
-
-import pygame
 import time
+import pygame
 
 from game.config import *
-from game.models.board import Board
-from game.models.pieces.piece import Pawn, Knight, Queen, Rook
-from game.models.square import Square
+from game.models.board_state import BoardState
+from game.view.board_view import BoardView
+from game.controller.chess_controller import ChessController  # new
 
+# --------------------------------------------------
+# INIT
+# --------------------------------------------------
 pygame.init()
-screen = pygame.display.set_mode((0, 0))
-pygame.display.update()
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+pygame.display.set_caption("Chess")
+
 clock = pygame.time.Clock()
 running = True
 
-
-square_size = 0  # will be computed later
-
-
-
-# --------------------
-# INITIALIZE BOARD
-# --------------------
+# --------------------------------------------------
+# BOARD SETUP
+# --------------------------------------------------
 window_width = screen.get_width()
 window_height = screen.get_height()
+
 chessboard_size = min(window_width, window_height) * 0.8
-chessboard_x = (window_width - chessboard_size) / 2
-chessboard_y = (window_height - chessboard_size) / 2
 square_size = chessboard_size / 8
 
-board = Board( chessboard_x, chessboard_y, square_size)
+chessboard_x = (window_width - chessboard_size) / 2
+chessboard_y = (window_height - chessboard_size) / 2
 
-# --------------------
+# Create game state (truth)
+board_state = BoardState(
+    fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+)
+
+# Create visual board (mirror)
+board_view = BoardView(
+    board_state=board_state,
+    board_x=chessboard_x,
+    board_y=chessboard_y,
+    square_size=square_size,
+)
+
+# Create controller
+controller = ChessController(board_state, board_view)
+
+# --------------------------------------------------
+# START SPAWN ANIMATIONS
+# --------------------------------------------------
+now = time.time()
+for piece_view in board_view.piece_views.values():
+    piece_view.start_spawn(now)
+
+# --------------------------------------------------
 # MAIN LOOP
-# --------------------
+# --------------------------------------------------
 while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-            pygame.quit()
-            sys.exit()
+    now = time.time()
 
-    current_time = time.time()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                running = False
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # left click
+                controller.handle_mouse_click(event.pos)
+
+    # UPDATE
+    board_view.update(now)
+
+    # DRAW
     screen.fill(BACKGROUND_COLOR)
-    board.update(current_time)
-    board.draw(screen)
+    board_view.draw(screen)
 
     pygame.display.flip()
     clock.tick(60)
 
 pygame.quit()
+sys.exit()
