@@ -53,7 +53,7 @@ class PieceView:
     # IMAGE LOADING
     # ----------------------------
     def _load_and_scale_image(self, piece: Piece) -> pygame.Surface:
-        filename = f"{piece.color[0]}{piece.__class__.__name__[0].lower()}.png"
+        filename = f"{piece.color[0]}{piece.SYMBOL}.png"
         path = os.path.join(self.ASSETS_PATH, filename)
 
         img = pygame.image.load(path).convert_alpha()
