@@ -136,7 +136,29 @@ class Bishop(Piece):
 class Knight(Piece):
     SYMBOL = "n"
     def get_allowed_moves(self, position, board_state):
-        return []
+        moves = []
+        x, y = position
+
+        jumps = [
+            (-2, -1), (-2,  1),
+            (-1, -2), (-1,  2),
+            ( 1, -2), ( 1,  2),
+            ( 2, -1), ( 2,  1),
+        ]
+
+        for dx, dy in jumps:
+            nx, ny = x + dx, y + dy
+            new_pos = (nx, ny)
+
+            if not board_state.in_bounds(new_pos):
+                continue
+
+            if board_state.is_empty(new_pos):
+                moves.append(new_pos)
+            elif board_state.is_enemy(new_pos, self.color):
+                moves.append(new_pos)
+
+        return moves
 
 
 # -------------------------------------------------
