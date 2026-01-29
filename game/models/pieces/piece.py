@@ -97,14 +97,37 @@ class Rook(Piece):
 
         return moves
 
-
 # -------------------------------------------------
 # BISHOP
 # -------------------------------------------------
 class Bishop(Piece):
     SYMBOL = "b"
     def get_allowed_moves(self, position, board_state):
-        return []
+        moves = []
+        x, y = position
+        directions = [
+            (1, 1),
+            (-1, 1),
+            (1, -1),
+            (-1, -1),
+        ]
+        for dx, dy in directions:
+            nx, ny = x + dx, y + dy
+
+            while 0 <= nx < 8 and 0 <= ny < 8:
+                pos = (nx, ny)
+
+                if board_state.is_empty(pos):
+                    moves.append(pos)
+                else:
+                    if board_state.is_enemy(pos, self.color):
+                        moves.append(pos)
+                    break  # stop scanning in this direction
+
+                nx += dx
+                ny += dy
+
+        return moves
 
 
 # -------------------------------------------------
