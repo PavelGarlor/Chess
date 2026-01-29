@@ -17,6 +17,8 @@ class BoardView:
 
     STATE_ANIMATING = "animating"
     STATE_STABLE = "stable"
+    FONT_SIZE = 20
+    FONT_COLOR = (255, 255, 255)
 
     def __init__(
         self,
@@ -29,31 +31,28 @@ class BoardView:
         animate_pieces: bool = ANIMATE_PIECES,
     ):
         self.state = board_state
-
         self.board_x = board_x
         self.board_y = board_y
         self.square_size = square_size
-
         self.animate_board = animate_board
         self.animate_pieces = animate_pieces
-
-        self.view_state = (
-            self.STATE_ANIMATING if animate_board else self.STATE_STABLE
-        )
-
+        self.view_state = self.STATE_ANIMATING if animate_board else self.STATE_STABLE
         self.elapsed_time = 0.0
 
         self.squares: list[Square] = []
         self.piece_views: Dict[Piece, PieceView] = {}
-
         self.visible_square_count = 0 if animate_board else self.SIZE * self.SIZE
         self.last_spawn_time = time.time()
         self.fall_start_time: float | None = None
 
-        self._create_squares()
-        self._create_piece_views()
         self.highlight_selected: Optional[Tuple[int, int]] = None
         self.highlight_moves: list[Tuple[int, int]] = []
+
+        # Font must be created after pygame.init()
+        self.font = pygame.font.SysFont("Arial", self.FONT_SIZE)
+
+        self._create_squares()
+        self._create_piece_views()
 
     # ------------------------------------------------------------------
     # UPDATE
@@ -72,7 +71,6 @@ class BoardView:
         ):
             self.visible_square_count += 1
             self.last_spawn_time = current_time
-
             if self.visible_square_count == len(self.squares):
                 self.fall_start_time = current_time
 
@@ -89,22 +87,17 @@ class BoardView:
 
         if self.visible_square_count == len(self.squares) and all_finished:
             self.view_state = self.STATE_STABLE
-
-            if self.animate_pieces:
-                start_time = time.time()
-                for view in self.piece_views.values():
+            start_time = time.time()
+            for view in self.piece_views.values():
+                if self.animate_pieces:
                     view.start_spawn(start_time)
-            else:
-                for view in self.piece_views.values():
+                else:
                     view.finish()
 
     # ------------------------------------------------------------------
     # DRAW
     # ------------------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:
-        # if self.view_state == self.STATE_STABLE:
-        #     self._draw_border(surface)
-
         # Draw squares
         for square in self.squares[: self.visible_square_count]:
             square.draw(surface)
@@ -115,18 +108,36 @@ class BoardView:
         # Draw pieces
         self._draw_pieces(surface)
 
-    def _draw_border(self, surface: pygame.Surface) -> None:
-        total_size = self.square_size * self.SIZE
-        pygame.draw.rect(
-            surface,
-            (92, 70, 48),
-            pygame.Rect(
-                self.board_x - self.BORDER_PADDING,
-                self.board_y - self.BORDER_PADDING,
-                total_size + self.BORDER_PADDING * 2,
-                total_size + self.BORDER_PADDING * 2,
-            ),
-        )
+        # Draw coordinates
+        self._draw_coordinates(surface)
+
+    def _draw_coordinates(self, surface: pygame.Surface):
+        sq = self.square_size
+        bx, by = self.board_x, self.board_y
+        files = "abcdefgh"
+        ranks = "12345678"
+
+
+
+        for i in range(self.SIZE):
+            # Letters (bottom of board)
+            letter = files[i]
+            # Determine which square this is: bottom row = rank 1
+            square_color = LIGHT_SQ if (self.SIZE - 1 + i) % 2 == 0 else DARK_SQ
+            font_color = LIGHT_SQ if square_color == DARK_SQ else DARK_SQ
+            text_surf = self.font.render(letter, True, font_color)
+            rect = text_surf.get_rect()
+            rect.topleft = (bx + i * sq + 2, by + self.SIZE * sq - self.FONT_SIZE - 2)
+            surface.blit(text_surf, rect)
+
+            # Numbers (left of board)
+            number = ranks[self.SIZE - 1 - i]
+            square_color = LIGHT_SQ if (i + 0) % 2 == 0 else DARK_SQ  # leftmost column
+            font_color = LIGHT_SQ if square_color == DARK_SQ else DARK_SQ
+            text_surf = self.font.render(number, True, font_color)
+            rect = text_surf.get_rect()
+            rect.topleft = (bx + 2, by + i * sq + 2)
+            surface.blit(text_surf, rect)
 
     def _draw_highlights(self, surface: pygame.Surface):
         if self.highlight_selected:
@@ -137,7 +148,7 @@ class BoardView:
                 self.square_size,
                 self.square_size,
             )
-            pygame.draw.rect(surface, (90, 242, 150, 104), rect)  #  overlay
+            pygame.draw.rect(surface, (0, 128, 255, 120), rect)  # blue overlay
 
         for x, y in self.highlight_moves:
             rect = pygame.Rect(
@@ -149,34 +160,17 @@ class BoardView:
             pygame.draw.rect(surface, (0, 255, 0, 80), rect)  # green overlay
 
     def _draw_pieces(self, surface: pygame.Surface) -> None:
-        """Draw pieces according to turn orientation while keeping animations"""
-
         for view in sorted(
-                self.piece_views.values(),
-                key=lambda v: v.piece.position[1] if self.state.current_turn == "white"
-                else 7 - v.piece.position[1],
-                reverse=True,
+            self.piece_views.values(),
+            key=lambda v: v.piece.position[1] if self.state.current_turn == "white" else 7 - v.piece.position[1],
+            reverse=True,
         ):
-            # Compute rotated offset without breaking animation
-            x, y = view.current_position  # this is animated position
-            grid_x, grid_y = view.piece.position
-
-            if self.state.current_turn == "black":
-                # mirror x and y around the board center
-                x = self.board_x + (self.SIZE - 1 - grid_x) * self.square_size + (x % 1)
-                y = self.board_y + grid_y * self.square_size + (y % 1)
-
             view.draw(surface)
 
     # ------------------------------------------------------------------
-    # EVENTS FROM CONTROLLER
+    # EVENTS
     # ------------------------------------------------------------------
-    def on_piece_moved(
-        self,
-        piece: Piece,
-        from_pos: Tuple[int, int],
-        to_pos: Tuple[int, int],
-    ) -> None:
+    def on_piece_moved(self, piece: Piece, from_pos: Tuple[int, int], to_pos: Tuple[int, int]) -> None:
         view = self.piece_views[piece]
         view.animate_to(self.grid_to_pixel(*to_pos))
 
@@ -189,44 +183,28 @@ class BoardView:
     # HELPERS
     # ------------------------------------------------------------------
     def pixel_to_grid(self, position: Tuple[int, int]) -> Optional[Tuple[int, int]]:
-        """
-        Convert mouse pixel coordinates to board grid coordinates (0-7, 0-7).
-        Returns None if clicked outside the board.
-        """
         mouse_x, mouse_y = position
         bx, by = self.board_x, self.board_y
         sq = self.square_size
-        size = self.SIZE
-
-        # Check bounds
-        if not (bx <= mouse_x <= bx + sq * size and by <= mouse_y <= by + sq * size):
+        if not (bx <= mouse_x <= bx + sq * self.SIZE and by <= mouse_y <= by + sq * self.SIZE):
             return None
-
         grid_x = int((mouse_x - bx) // sq)
-        grid_y = int((mouse_y - by) // sq)
-
-        # Flip vertically because y=0 is top of screen
-        grid_y = size - 1 - grid_y
-
+        grid_y = self.SIZE - 1 - int((mouse_y - by) // sq)
         return grid_x, grid_y
 
-    def grid_to_pixel(self, grid_x: int, grid_y: int) -> tuple[float, float]:
-        """
-        Returns the bottom-left pixel coordinates of a square (used for PieceView),
-        taking board rotation into account.
-        """
+    def grid_to_pixel(self, grid_x: int, grid_y: int) -> Tuple[float, float]:
         if self.state.current_turn == "white":
-            # normal orientation: white at bottom
             px = self.board_x + grid_x * self.square_size
             py = self.board_y + (self.SIZE - 1 - grid_y) * self.square_size + self.square_size
         else:
-            # black's turn: rotate board 180 degrees
             px = self.board_x + (self.SIZE - 1 - grid_x) * self.square_size
             py = self.board_y + grid_y * self.square_size + self.square_size
         return px, py
 
+    # ------------------------------------------------------------------
+    # INITIALIZATION
+    # ------------------------------------------------------------------
     def _create_squares(self) -> None:
-        """Create square positions; rotation will be handled in draw/pixel conversion"""
         self.squares.clear()
         for row in range(self.SIZE):
             for col in range(self.SIZE):
@@ -236,14 +214,14 @@ class BoardView:
                 self.squares.append(Square(color, x, y, self.square_size))
 
     def _create_piece_views(self) -> None:
+        """Spawn pieces outside screen randomly"""
         window_width, window_height = pygame.display.get_window_size()
-        padding = self.square_size * 2  # how far outside the screen
+        padding = self.square_size * 2
 
         for pos, piece in self.state.positions.items():
-            # Target pixel on the board
             target_pixel = self.grid_to_pixel(*pos)
 
-            # Random spawn completely outside the screen
+            # Random spawn outside screen
             side = random.choice(["top", "bottom", "left", "right"])
             if side == "top":
                 spawn_pos = (random.uniform(-padding, window_width + padding), -padding)
@@ -254,22 +232,11 @@ class BoardView:
             else:  # right
                 spawn_pos = (window_width + padding, random.uniform(-padding, window_height + padding))
 
-            # Create PieceView
             view = PieceView(
                 piece=piece,
                 target_position=target_pixel,
                 square_size=self.square_size,
                 animate=self.animate_pieces,
             )
-
-            # Assign random spawn
             view.spawn_position = spawn_pos
             self.piece_views[piece] = view
-    # def _create_piece_views(self) -> None:
-    #     for pos, piece in self.state.positions.items():
-    #         self.piece_views[piece] = PieceView(
-    #             piece=piece,
-    #             target_position=self.grid_to_pixel(*pos),
-    #             square_size=self.square_size,
-    #             animate=self.animate_pieces,
-    #         )

@@ -45,6 +45,13 @@ class BoardState:
 
         return moves
 
+    def is_empty(self, pos: tuple[int, int]) -> bool:
+        return pos not in self.positions
+
+    def is_enemy(self, pos: tuple[int, int], color: str) -> bool:
+        piece = self.get_piece(pos)
+        return piece is not None and piece.color != color
+
     def _parse_fen(self) -> None:
         board_fen = self.fen.split()[0]
 

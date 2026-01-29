@@ -11,6 +11,11 @@ from game.controller.chess_controller import ChessController  # new
 # INIT
 # --------------------------------------------------
 pygame.init()
+pygame.font.init()
+FONT_SIZE = 20
+FONT_COLOR = (255, 255, 255)
+
+FONT = pygame.font.SysFont("Arial", FONT_SIZE)  # system font
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 pygame.display.set_caption("Chess")
 
