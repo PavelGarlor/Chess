@@ -181,5 +181,28 @@ class Queen(Piece):
 # -------------------------------------------------
 class King(Piece):
     SYMBOL = "k"
+
     def get_allowed_moves(self, position, board_state):
-        return []
+        moves = []
+        x, y = position
+
+        # All 8 possible directions
+        directions = [
+            (-1, -1), (0, -1), (1, -1),
+            (-1, 0), (1, 0),
+            (-1, 1), (0, 1), (1, 1),
+        ]
+
+        for dx, dy in directions:
+            nx, ny = x + dx, y + dy
+            new_pos = (nx, ny)
+
+            if not board_state.in_bounds(new_pos):
+                continue
+
+            if board_state.is_empty(new_pos):
+                moves.append(new_pos)
+            elif board_state.is_enemy(new_pos, self.color):
+                moves.append(new_pos)
+
+        return moves

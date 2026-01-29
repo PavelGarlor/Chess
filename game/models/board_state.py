@@ -52,6 +52,11 @@ class BoardState:
         piece = self.get_piece(pos)
         return piece is not None and piece.color != color
 
+    @staticmethod
+    def in_bounds(pos):
+        x, y = pos
+        return 0 <= x < 8 and 0 <= y < 8
+
     def _parse_fen(self) -> None:
         board_fen = self.fen.split()[0]
 
