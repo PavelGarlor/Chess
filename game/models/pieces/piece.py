@@ -145,7 +145,35 @@ class Knight(Piece):
 class Queen(Piece):
     SYMBOL = "q"
     def get_allowed_moves(self, position, board_state):
-        return []
+        moves = []
+        x, y = position
+        directions = [
+            (1, 0),  # right
+            (-1, 0),  # left
+            (0, 1),  # up
+            (0, -1),  # down
+            (1, 1),
+            (-1, 1),
+            (1, -1),
+            (-1, -1),
+        ]
+        for dx, dy in directions:
+            nx, ny = x + dx, y + dy
+
+            while 0 <= nx < 8 and 0 <= ny < 8:
+                pos = (nx, ny)
+
+                if board_state.is_empty(pos):
+                    moves.append(pos)
+                else:
+                    if board_state.is_enemy(pos, self.color):
+                        moves.append(pos)
+                    break  # stop scanning in this direction
+
+                nx += dx
+                ny += dy
+
+        return moves
 
 
 # -------------------------------------------------
