@@ -7,6 +7,7 @@ Position = Tuple[int, int]
 
 
 class Piece(ABC):
+    SYMBOL = "?"
     def __init__(self, color: str):
         self.color = color
         self.position: Position | None = None
@@ -31,6 +32,7 @@ class Piece(ABC):
 # PAWN
 # -------------------------------------------------
 class Pawn(Piece):
+    SYMBOL = "p"
     def get_allowed_moves(self, position, board_state):
         moves = []
         x, y = position
@@ -67,14 +69,40 @@ class Pawn(Piece):
 # ROOK
 # -------------------------------------------------
 class Rook(Piece):
+    SYMBOL = "r"
     def get_allowed_moves(self, position, board_state):
-        return []
+        moves = []
+        x, y = position
+        directions = [
+            (1, 0),   # right
+            (-1, 0),  # left
+            (0, 1),   # up
+            (0, -1),  # down
+        ]
+        for dx, dy in directions:
+            nx, ny = x + dx, y + dy
+
+            while 0 <= nx < 8 and 0 <= ny < 8:
+                pos = (nx, ny)
+
+                if board_state.is_empty(pos):
+                    moves.append(pos)
+                else:
+                    if board_state.is_enemy(pos, self.color):
+                        moves.append(pos)
+                    break  # stop scanning in this direction
+
+                nx += dx
+                ny += dy
+
+        return moves
 
 
 # -------------------------------------------------
 # BISHOP
 # -------------------------------------------------
 class Bishop(Piece):
+    SYMBOL = "b"
     def get_allowed_moves(self, position, board_state):
         return []
 
@@ -83,6 +111,7 @@ class Bishop(Piece):
 # KNIGHT
 # -------------------------------------------------
 class Knight(Piece):
+    SYMBOL = "n"
     def get_allowed_moves(self, position, board_state):
         return []
 
@@ -91,6 +120,7 @@ class Knight(Piece):
 # QUEEN
 # -------------------------------------------------
 class Queen(Piece):
+    SYMBOL = "q"
     def get_allowed_moves(self, position, board_state):
         return []
 
@@ -99,5 +129,6 @@ class Queen(Piece):
 # KING
 # -------------------------------------------------
 class King(Piece):
+    SYMBOL = "k"
     def get_allowed_moves(self, position, board_state):
         return []

@@ -117,8 +117,6 @@ class BoardView:
         files = "abcdefgh"
         ranks = "12345678"
 
-
-
         for i in range(self.SIZE):
             # Letters (bottom of board)
             letter = files[i]
@@ -148,7 +146,12 @@ class BoardView:
                 self.square_size,
                 self.square_size,
             )
-            pygame.draw.rect(surface, (0, 128, 255, 120), rect)  # blue overlay
+            self._draw_transparent_rect(
+                surface,
+                (128, 255, 120),  # teal / green
+                rect,
+                186  # transparency (0–255)
+            )
 
         for x, y in self.highlight_moves:
             rect = pygame.Rect(
@@ -157,7 +160,19 @@ class BoardView:
                 self.square_size,
                 self.square_size,
             )
-            pygame.draw.rect(surface, (0, 255, 0, 80), rect)  # green overlay
+            #pygame.draw.rect(surface, (0.2, 140, 141, 186), rect)  # green overlay
+            self._draw_transparent_rect(
+                surface,
+                (140, 141, 186),  # teal / green
+                rect,
+                186  # transparency (0–255)
+            )
+
+
+    def _draw_transparent_rect(self,surface, color, rect, alpha):
+        overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        overlay.fill((*color, alpha))
+        surface.blit(overlay, rect.topleft)
 
     def _draw_pieces(self, surface: pygame.Surface) -> None:
         for view in sorted(
