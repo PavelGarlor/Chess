@@ -10,6 +10,7 @@ class BoardState:
         self.fen = fen
         self.positions: dict[tuple[int, int], Piece] = {}
         self._parse_fen()
+        self.en_passant_target = None
 
     def get_piece(self, pos: tuple[int, int]) -> Piece | None:
         return self.positions.get(pos)
@@ -18,32 +19,39 @@ class BoardState:
         piece.position = pos
         self.positions[pos] = piece
 
-    def move_piece(
-        self,
-        from_pos: tuple[int, int],
-        to_pos: tuple[int, int],
-    ) -> Piece | None:
-        piece = self.positions.pop(from_pos, None)
+    def move_piece(self, from_pos: tuple[int, int], to_pos: tuple[int, int]) -> Piece | None:
+        piece = self.positions.get(from_pos)
         if piece is None:
             return None
 
-        captured = self.positions.pop(to_pos, None)
+        # -----------------------------------
+        # EN PASSANT CAPTURE HANDLING
+        # -----------------------------------
+        if isinstance(piece, Pawn) and self.en_passant_target == to_pos:
+            # The captured pawn is behind the en passant square
+            direction = 1 if piece.color == "white" else -1
+            captured_square = (to_pos[0], to_pos[1] - direction)
+            captured_piece = self.positions.pop(captured_square, None)
+        else:
+            captured_piece = self.positions.pop(to_pos, None)
+
+        # -----------------------------------
+        # MOVE THE PIECE
+        # -----------------------------------
+        self.positions.pop(from_pos, None)
         piece.position = to_pos
         self.positions[to_pos] = piece
 
-        return captured
+        # -----------------------------------
+        # SET NEW EN PASSANT TARGET
+        # -----------------------------------
+        if isinstance(piece, Pawn) and abs(to_pos[1] - from_pos[1]) == 2:
+            mid_rank = (to_pos[1] + from_pos[1]) // 2
+            self.en_passant_target = (from_pos[0], mid_rank)
+        else:
+            self.en_passant_target = None
 
-    def get_allowed_moves(self, position, board_state):
-        x, y = position
-        moves = []
-        direction = 1 if self.color == "white" else -1
-        target = (x, y + direction)
-        if 0 <= target[1] < board_state.SIZE and not board_state.get_piece(target):
-            moves.append(target)
-
-        #after obtaining all the moves that the piece can do we filter the legals
-
-        return moves
+        return captured_piece
 
     def is_empty(self, pos: tuple[int, int]) -> bool:
         return pos not in self.positions

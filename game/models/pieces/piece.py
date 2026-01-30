@@ -61,6 +61,15 @@ class Pawn(Piece):
             capture_pos = (x + dx, y + direction)
             if board_state.is_enemy(capture_pos, self.color):
                 moves.append(capture_pos)
+        # -----------------------
+        # En passant capture
+        # -----------------------
+        ep = board_state.en_passant_target
+        if ep:
+            ep_x, ep_y = ep
+            # Pawn can move diagonally into ep square
+            if ep_y == y + direction and abs(ep_x - x) == 1:
+                moves.append(ep)
 
         return moves
 

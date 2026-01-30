@@ -152,6 +152,20 @@ class BoardView:
                 rect,
                 186  # transparency (0–255)
             )
+        if self.state.en_passant_target:
+            x, y = self.state.en_passant_target
+            rect = pygame.Rect(
+                self.board_x + x * self.square_size,
+                self.board_y + (self.SIZE - 1 - y) * self.square_size,
+                self.square_size,
+                self.square_size,
+            )
+            self._draw_transparent_rect(
+                surface,
+                (255, 0, 0),  # teal / green
+                rect,
+                186  # transparency (0–255)
+            )
 
         for x, y in self.highlight_moves:
             rect = pygame.Rect(

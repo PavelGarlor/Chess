@@ -35,6 +35,7 @@ class ChessController:
         elif self.selected_pos:
             if grid_pos in self.view.highlight_moves:
                 # Valid move
+
                 self.attempt_move(self.selected_pos, grid_pos)
             # Clear selection
             self.selected_pos = None
