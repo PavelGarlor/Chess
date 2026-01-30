@@ -216,6 +216,7 @@ class King(Piece):
     def get_allowed_moves(self, position, board_state):
         moves = []
         x, y = position
+        color = self.color
 
         # All 8 possible directions
         directions = [
@@ -223,6 +224,22 @@ class King(Piece):
             (-1, 0), (1, 0),
             (-1, 1), (0, 1), (1, 1),
         ]
+        if board_state.castling_rights[color]["K"]:
+            # Squares between king and rook must be empty
+            if board_state.is_empty((x + 1, y)) and board_state.is_empty((x + 2, y)):
+                # King cannot castle through check (you need an is_square_attacked function)
+                # if not board_state.is_square_attacked((x, y), color) and \
+                #         not board_state.is_square_attacked((x + 1, y), color) and \
+                #         not board_state.is_square_attacked((x + 2, y), color):
+                moves.append((x + 2, y))
+
+        if board_state.castling_rights[color]["Q"]:
+            if board_state.is_empty((x - 1, y)) and board_state.is_empty((x - 2, y)) and board_state.is_empty(
+                    (x - 3, y)):
+                # if not board_state.is_square_attacked((x, y), color) and \
+                #         not board_state.is_square_attacked((x - 1, y), color) and \
+                #         not board_state.is_square_attacked((x - 2, y), color):
+                moves.append((x - 2, y))
 
         for dx, dy in directions:
             nx, ny = x + dx, y + dy

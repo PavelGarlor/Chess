@@ -50,9 +50,16 @@ class ChessController:
         if piece is None:
             return
 
-        # You can add real chess move validation here later
-        captured = self.state.move_piece(from_pos, to_pos)
-        self.animate_move(piece, from_pos, to_pos, captured)
+        # Perform the move; get captured piece and all moves done
+        captured_piece, moves_done = self.state.move_piece(from_pos, to_pos)
+
+        # Animate each move in the moves_done list
+        for move in moves_done:
+            move_piece = move["piece"]
+            move_from = move["from"]
+            move_to = move["to"]
+            move_captured = move["captured"]
+            self.animate_move(move_piece, move_from, move_to, move_captured)
 
         # Switch turn
         self.current_turn = "black" if self.current_turn == "white" else "white"
