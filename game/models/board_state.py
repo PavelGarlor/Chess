@@ -137,8 +137,21 @@ class BoardState:
         return 0 <= x < 8 and 0 <= y < 8
 
     def _parse_fen(self) -> None:
-        board_fen = self.fen.split()[0]
+        """
+        Parses FEN string into:
+        - board pieces (self.positions)
+        - current turn (self.current_turn)
+        - castling rights (self.castling_rights)
+        - en passant target (self.en_passant_target)
+        """
+        parts = self.fen.split()
+        if len(parts) < 4:
+            raise ValueError("FEN must have at least 4 parts")
 
+        board_fen, turn_fen, castling_fen, en_passant_fen = parts[:4]
+
+        # --- 1) Pieces ---
+        self.positions.clear()
         row = self.SIZE - 1
         col = 0
 
@@ -156,12 +169,39 @@ class BoardState:
                 row -= 1
                 col = 0
                 continue
-
             if char.isdigit():
                 col += int(char)
                 continue
-
             color = "white" if char.isupper() else "black"
             piece_class = piece_map[char.lower()]
             self.place_piece(piece_class(color), (col, row))
             col += 1
+
+        # --- 2) Current turn ---
+        self.current_turn = "white" if turn_fen.lower() == "w" else "black"
+
+        # --- 3) Castling rights ---
+        self.castling_rights = {
+            "white": {"K": False, "Q": False},
+            "black": {"K": False, "Q": False},
+        }
+        if "K" in castling_fen:
+            self.castling_rights["white"]["K"] = True
+        if "Q" in castling_fen:
+            self.castling_rights["white"]["Q"] = True
+        if "k" in castling_fen:
+            self.castling_rights["black"]["K"] = True
+        if "q" in castling_fen:
+            self.castling_rights["black"]["Q"] = True
+
+        # --- 4) En passant target ---
+        if en_passant_fen == "-":
+            self.en_passant_target = None
+        else:
+            # Convert algebraic (e3) to grid coordinates (x, y)
+            file_char = en_passant_fen[0]
+            rank_char = en_passant_fen[1]
+            x = ord(file_char.lower()) - ord("a")
+            y = int(rank_char) - 1
+            self.en_passant_target = (x, y)
+

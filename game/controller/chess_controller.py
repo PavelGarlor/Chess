@@ -13,7 +13,6 @@ class ChessController:
         self.state = board_state
         self.view = board_view
         self.selected_pos: Optional[Tuple[int, int]] = None
-        self.current_turn: str = "white"  # white moves first
 
     # ----------------------------
     # MAIN INPUT HANDLER
@@ -25,7 +24,7 @@ class ChessController:
 
         piece = self.state.get_piece(grid_pos)
 
-        if piece and piece.color == self.current_turn:
+        if piece and piece.color == self.state.current_turn:
             # Select piece
             self.selected_pos = grid_pos
             self.view.highlight_selected = grid_pos
@@ -62,7 +61,7 @@ class ChessController:
             self.animate_move(move_piece, move_from, move_to, move_captured)
 
         # Switch turn
-        self.current_turn = "black" if self.current_turn == "white" else "white"
+        self.state.current_turn= "black" if self.state.current_turn == "white" else "white"
 
     # ----------------------------
     # ANIMATION TRIGGER

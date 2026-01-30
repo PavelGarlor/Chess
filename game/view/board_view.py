@@ -29,6 +29,7 @@ class BoardView:
         *,
         animate_board: bool = ANIMATE_BOARD,
         animate_pieces: bool = ANIMATE_PIECES,
+        orientation: str = "white",  # new: "white" or "black" at bottom
     ):
         self.state = board_state
         self.board_x = board_x
@@ -36,6 +37,7 @@ class BoardView:
         self.square_size = square_size
         self.animate_board = animate_board
         self.animate_pieces = animate_pieces
+        self.orientation = orientation  # store orientation
         self.view_state = self.STATE_ANIMATING if animate_board else self.STATE_STABLE
         self.elapsed_time = 0.0
 
@@ -190,9 +192,9 @@ class BoardView:
 
     def _draw_pieces(self, surface: pygame.Surface) -> None:
         for view in sorted(
-            self.piece_views.values(),
-            key=lambda v: v.piece.position[1] if self.state.current_turn == "white" else 7 - v.piece.position[1],
-            reverse=True,
+                self.piece_views.values(),
+                key=lambda v: v.piece.position[1],
+                reverse=True,
         ):
             view.draw(surface)
 
@@ -222,10 +224,11 @@ class BoardView:
         return grid_x, grid_y
 
     def grid_to_pixel(self, grid_x: int, grid_y: int) -> Tuple[float, float]:
-        if self.state.current_turn == "white":
+        """Convert grid coordinates to pixel coordinates based on board orientation"""
+        if self.orientation == "white":
             px = self.board_x + grid_x * self.square_size
             py = self.board_y + (self.SIZE - 1 - grid_y) * self.square_size + self.square_size
-        else:
+        else:  # black at bottom
             px = self.board_x + (self.SIZE - 1 - grid_x) * self.square_size
             py = self.board_y + grid_y * self.square_size + self.square_size
         return px, py
