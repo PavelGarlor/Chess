@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple
 
-
+from game.models.move import Move
 
 Position = Tuple[int, int]
 
@@ -17,7 +17,7 @@ class Piece(ABC):
         self,
         position: Position,
         board_state,
-    ) -> List[Position]:
+    ) -> List[Move]:
         """
         Returns all moves ignoring check/checkmate.
         To be implemented later.
@@ -34,7 +34,7 @@ class Piece(ABC):
 class Pawn(Piece):
     SYMBOL = "p"
     def get_allowed_moves(self, position, board_state):
-        moves = []
+        moves : List[Move] = []
         x, y = position
 
         direction = 1 if self.color == "white" else -1
@@ -45,14 +45,14 @@ class Pawn(Piece):
         # -----------------------
         one_step = (x, y + direction)
         if board_state.is_empty(one_step):
-            moves.append(one_step)
+            moves.append(Move(self,one_step))
 
             # -----------------------
             # Forward move (2 squares)
             # -----------------------
             two_step = (x, y + 2 * direction)
             if y == start_row and board_state.is_empty(two_step):
-                moves.append(two_step)
+                moves.append(Move(self,two_step))
 
         # -----------------------
         # Captures (diagonal)
@@ -60,7 +60,7 @@ class Pawn(Piece):
         for dx in (-1, 1):
             capture_pos = (x + dx, y + direction)
             if board_state.is_enemy(capture_pos, self.color):
-                moves.append(capture_pos)
+                moves.append(Move(self,capture_pos))
         # -----------------------
         # En passant capture
         # -----------------------
@@ -69,7 +69,7 @@ class Pawn(Piece):
             ep_x, ep_y = ep
             # Pawn can move diagonally into ep square
             if ep_y == y + direction and abs(ep_x - x) == 1:
-                moves.append(ep)
+                moves.append(Move(self,ep))
 
         return moves
 
@@ -80,7 +80,7 @@ class Pawn(Piece):
 class Rook(Piece):
     SYMBOL = "r"
     def get_allowed_moves(self, position, board_state):
-        moves = []
+        moves: List[Move] = []
         x, y = position
         directions = [
             (1, 0),   # right
@@ -95,10 +95,10 @@ class Rook(Piece):
                 pos = (nx, ny)
 
                 if board_state.is_empty(pos):
-                    moves.append(pos)
+                    moves.append(Move(self,pos))
                 else:
                     if board_state.is_enemy(pos, self.color):
-                        moves.append(pos)
+                        moves.append(Move(self,pos))
                     break  # stop scanning in this direction
 
                 nx += dx
@@ -112,7 +112,7 @@ class Rook(Piece):
 class Bishop(Piece):
     SYMBOL = "b"
     def get_allowed_moves(self, position, board_state):
-        moves = []
+        moves: List[Move] = []
         x, y = position
         directions = [
             (1, 1),
@@ -127,10 +127,10 @@ class Bishop(Piece):
                 pos = (nx, ny)
 
                 if board_state.is_empty(pos):
-                    moves.append(pos)
+                    moves.append(Move(self,pos))
                 else:
                     if board_state.is_enemy(pos, self.color):
-                        moves.append(pos)
+                        moves.append(Move(self,pos))
                     break  # stop scanning in this direction
 
                 nx += dx
@@ -145,7 +145,7 @@ class Bishop(Piece):
 class Knight(Piece):
     SYMBOL = "n"
     def get_allowed_moves(self, position, board_state):
-        moves = []
+        moves: List[Move] = []
         x, y = position
 
         jumps = [
@@ -163,9 +163,9 @@ class Knight(Piece):
                 continue
 
             if board_state.is_empty(new_pos):
-                moves.append(new_pos)
+                moves.append(Move(self,new_pos))
             elif board_state.is_enemy(new_pos, self.color):
-                moves.append(new_pos)
+                moves.append(Move(self,new_pos))
 
         return moves
 
@@ -176,7 +176,7 @@ class Knight(Piece):
 class Queen(Piece):
     SYMBOL = "q"
     def get_allowed_moves(self, position, board_state):
-        moves = []
+        moves: List[Move] = []
         x, y = position
         directions = [
             (1, 0),  # right
@@ -195,10 +195,10 @@ class Queen(Piece):
                 pos = (nx, ny)
 
                 if board_state.is_empty(pos):
-                    moves.append(pos)
+                    moves.append(Move(self,pos))
                 else:
                     if board_state.is_enemy(pos, self.color):
-                        moves.append(pos)
+                        moves.append(Move(self,pos))
                     break  # stop scanning in this direction
 
                 nx += dx
@@ -214,7 +214,7 @@ class King(Piece):
     SYMBOL = "k"
 
     def get_allowed_moves(self, position, board_state):
-        moves = []
+        moves: List[Move] = []
         x, y = position
         color = self.color
 
@@ -231,7 +231,7 @@ class King(Piece):
                 # if not board_state.is_square_attacked((x, y), color) and \
                 #         not board_state.is_square_attacked((x + 1, y), color) and \
                 #         not board_state.is_square_attacked((x + 2, y), color):
-                moves.append((x + 2, y))
+                moves.append(Move(self,(x + 2, y)))
 
         if board_state.castling_rights[color]["Q"]:
             if board_state.is_empty((x - 1, y)) and board_state.is_empty((x - 2, y)) and board_state.is_empty(
@@ -239,7 +239,7 @@ class King(Piece):
                 # if not board_state.is_square_attacked((x, y), color) and \
                 #         not board_state.is_square_attacked((x - 1, y), color) and \
                 #         not board_state.is_square_attacked((x - 2, y), color):
-                moves.append((x - 2, y))
+                moves.append(Move(self,(x - 2, y)))
 
         for dx, dy in directions:
             nx, ny = x + dx, y + dy
@@ -249,8 +249,8 @@ class King(Piece):
                 continue
 
             if board_state.is_empty(new_pos):
-                moves.append(new_pos)
+                moves.append(Move(self,new_pos))
             elif board_state.is_enemy(new_pos, self.color):
-                moves.append(new_pos)
+                moves.append(Move(self,new_pos))
 
         return moves

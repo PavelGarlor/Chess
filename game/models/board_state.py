@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from game.models.pieces.piece import *
 
 
@@ -24,10 +26,11 @@ class BoardState:
         piece.position = pos
         self.positions[pos] = piece
 
-    def move_piece(self, from_pos: tuple[int, int], to_pos: tuple[int, int]) -> tuple[Piece | None, list[dict]]:
+    def make_move(self, move : Move) -> tuple[Piece | None, list[dict]]:
         """
         Move a piece from `from_pos` to `to_pos`, handling:
         - Normal moves
+
         - Captures
         - En passant
         - Castling
@@ -39,6 +42,8 @@ class BoardState:
                 {"piece": Piece, "from": (x, y), "to": (x, y), "captured": Optional[Piece]}
         """
         moves_done = []
+        from_pos = move.piece.position
+        to_pos = move.target_pos
         moving_piece = self.positions.get(from_pos)
         if moving_piece is None:
             return None, moves_done
@@ -135,6 +140,24 @@ class BoardState:
     def in_bounds(pos):
         x, y = pos
         return 0 <= x < 8 and 0 <= y < 8
+
+    def copy(self) -> "BoardState":
+        new_state = BoardState(self.fen)  # or create an empty BoardState
+        # Deep copy pieces
+        new_state.positions = {}
+        for pos, piece in self.positions.items():
+            # Create a new piece of the same type and color
+            piece_class = type(piece)
+            new_piece = piece_class(piece.color)
+            new_piece.position = piece.position
+            new_state.positions[pos] = new_piece
+
+        # Copy other attributes
+        new_state.current_turn = self.current_turn
+        new_state.castling_rights = deepcopy(self.castling_rights)
+        new_state.en_passant_target = self.en_passant_target
+
+        return new_state
 
     def _parse_fen(self) -> None:
         """

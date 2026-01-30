@@ -1,8 +1,9 @@
 import pygame
 import time
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
-from game.models.pieces.piece import Piece
+from game.models.move import Move
+from game.models.pieces.piece import Piece, King
 from game.view.piece_view import PieceView
 from game.view.board_view import BoardView
 from game.models.board_state import BoardState
@@ -29,13 +30,16 @@ class ChessController:
             self.selected_pos = grid_pos
             self.view.highlight_selected = grid_pos
             # Ask the piece for its allowed moves
-            self.view.highlight_moves = piece.get_allowed_moves(grid_pos, self.state)
-
+            pseudo_legal_moves = piece.get_allowed_moves(grid_pos, self.state)
+            #filter moves
+            self.view.highlight_moves = self.get_legal_moves(pseudo_legal_moves,self.state)
         elif self.selected_pos:
-            if grid_pos in self.view.highlight_moves:
-                # Valid move
-
-                self.attempt_move(self.selected_pos, grid_pos)
+            # Check if the clicked square is a valid target for the selected piece
+            moves = [m for m in self.view.highlight_moves if m.target_pos == grid_pos]
+            if moves:
+                # Take the first matching move (or handle special cases like promotion later)
+                move = moves[0]
+                self.attempt_move(self.selected_pos, move.target_pos)
             # Clear selection
             self.selected_pos = None
             self.view.highlight_selected = None
@@ -50,7 +54,8 @@ class ChessController:
             return
 
         # Perform the move; get captured piece and all moves done
-        captured_piece, moves_done = self.state.move_piece(from_pos, to_pos)
+        move = Move(piece,to_pos)
+        captured_piece, moves_done = self.state.make_move(move)
 
         # Animate each move in the moves_done list
         for move in moves_done:
@@ -107,3 +112,39 @@ class ChessController:
         grid_y = size - 1 - grid_y
 
         return grid_x, grid_y
+
+    def get_legal_moves(self, pseudo_legal_moves: List[Move], state: "BoardState") -> List[Move]:
+        legal_moves: List[Move] = []
+
+        for move in pseudo_legal_moves:
+            # 1. Make a temporary copy of the board
+            temp_state = state.copy()
+
+            # 2. Apply the move
+            temp_state.make_move(move)
+
+            # 3. Find the king's position
+            king_pos = None
+            for pos, piece in temp_state.positions.items():
+                if isinstance(piece, King) and piece.color == move.piece.color:
+                    king_pos = pos
+                    break
+
+            if king_pos is None:
+                continue  # shouldn't happen
+
+            # 4. Check if any enemy can attack the king
+            in_check = False
+            for pos, piece in temp_state.positions.items():
+                if piece.color != move.piece.color:
+                    enemy_moves = piece.get_allowed_moves(pos, temp_state)
+                    if any(m.target_pos == king_pos for m in enemy_moves):
+                        in_check = True
+                        break
+
+            # 5. Only keep safe moves
+            if not in_check:
+                legal_moves.append(move)
+
+        return legal_moves
+

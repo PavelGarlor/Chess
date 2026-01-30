@@ -6,6 +6,7 @@ import pygame
 
 from game.config import *
 from game.models.board_state import BoardState
+from game.models.move import Move
 from game.models.pieces.piece import Piece
 from game.models.square import Square
 from game.view.piece_view import PieceView
@@ -48,7 +49,7 @@ class BoardView:
         self.fall_start_time: float | None = None
 
         self.highlight_selected: Optional[Tuple[int, int]] = None
-        self.highlight_moves: list[Tuple[int, int]] = []
+        self.highlight_moves: list[Move] = []
 
         # Font must be created after pygame.init()
         self.font = pygame.font.SysFont("Arial", self.FONT_SIZE)
@@ -169,7 +170,9 @@ class BoardView:
                 186  # transparency (0–255)
             )
 
-        for x, y in self.highlight_moves:
+
+        for move in self.highlight_moves:
+            x,y = move.target_pos
             rect = pygame.Rect(
                 self.board_x + x * self.square_size,
                 self.board_y + (self.SIZE - 1 - y) * self.square_size,
