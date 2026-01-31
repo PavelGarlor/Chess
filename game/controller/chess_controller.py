@@ -11,10 +11,12 @@ from game.models.board_state import BoardState
 
 
 class ChessController:
-    def __init__(self, board_state: BoardState, board_view: BoardView):
+    def __init__(self, board_state: BoardState, board_view: BoardView, game_view=None):
         self.state = board_state
         self.view = board_view
+        self.game_view = game_view
         self.selected_pos: Optional[Tuple[int, int]] = None
+
 
     # ----------------------------
     # MAIN INPUT HANDLER
@@ -76,6 +78,8 @@ class ChessController:
         enemy = self.state.current_turn
         if self.state.is_checkmate(enemy):
             print("CHECKMATE! " + enemy + " loses!")
+            if self.game_view:
+                self.game_view.set_message(f"Checkmate! {enemy.capitalize()} loses!")
         elif self.state.is_in_check(enemy):
             print("CHECK on", enemy)
         elif self.state.is_stalemate(enemy):

@@ -11,6 +11,7 @@ class PieceView:
     FALL_DURATION = 0.9
     CAPTURE_FADE_TIME = 0.3
     ASSETS_PATH = "assets/pieces/3Dpieces"
+    # ASSETS_PATH = "assets/pieces/Futuristic"
 
     def __init__(
         self,
