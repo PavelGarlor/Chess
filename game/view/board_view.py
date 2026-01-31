@@ -300,3 +300,26 @@ class BoardView:
             )
             view.spawn_position = spawn_pos
             self.piece_views[piece] = view
+
+
+
+    def replace_piece(self, old_pos, new_piece):
+        # remove old piece view
+        old_piece = None
+        for piece in list(self.piece_views.keys()):
+            if piece.position == old_pos:
+                old_piece = piece
+                break
+
+        if old_piece:
+            del self.piece_views[old_piece]
+
+        # add new piece view
+        target_pixel = self.grid_to_pixel(*new_piece.position)
+        view = PieceView(
+            piece=new_piece,
+            target_position=target_pixel,
+            square_size=self.square_size,
+            animate=False
+        )
+        self.piece_views[new_piece] = view

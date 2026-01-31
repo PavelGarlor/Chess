@@ -3,8 +3,7 @@ import time
 from typing import Optional, Tuple, List
 
 from game import PRINT_FEN
-from game.models.move import Move
-from game.models.pieces.piece import Piece, King, Rook
+from game.models.pieces.piece import *
 from game.view.piece_view import PieceView
 from game.view.board_view import BoardView
 from game.models.board_state import BoardState
@@ -27,6 +26,9 @@ class ChessController:
             return
 
         piece = self.state.get_piece(grid_pos)
+        if self.game_view.promotion_active:
+            self._handle_promotion_click(mouse_pos)
+            return
 
         if piece and piece.color == self.state.current_turn:
             # Select piece
@@ -60,8 +62,7 @@ class ChessController:
 
         # Perform the move; get captured piece and all moves done
         move = Move(piece,to_pos)
-        captured_piece, moves_done = self.state.make_move(move)
-
+        captured_piece, moves_done, status = self.state.make_move(move)
 
         # Animate each move in the moves_done list
         for move in moves_done:
@@ -70,6 +71,13 @@ class ChessController:
             move_to = move["to"]
             move_captured = move["captured"]
             self.animate_move(move_piece, move_from, move_to, move_captured)
+
+        if status == "promotion":
+            # freeze game
+            self.state.current_turn = None
+            # ask GameView to show promotion UI
+            self.game_view.start_promotion(piece.color, to_pos)
+            return
 
         # Switch turn
         self.state.current_turn= "black" if self.state.current_turn == "white" else "white"
@@ -140,4 +148,28 @@ class ChessController:
 
         return grid_x, grid_y
 
+    def _handle_promotion_click(self, mouse_pos):
+        for rect, piece_name in self.game_view.promotion_buttons:
+            if rect.collidepoint(mouse_pos):
+                self._promote_pawn(piece_name)
+                self.game_view.promotion_active = False
+                return
 
+
+
+    def _promote_pawn(self, piece_name):
+        pos = self.game_view.promotion_position
+        color = self.game_view.promotion_color
+
+
+        cls = {"Queen": Queen, "Rook": Rook, "Bishop": Bishop, "Knight": Knight}[piece_name]
+
+        # Replace pawn with new piece
+        new_piece = cls(color)
+        self.state.set_piece(new_piece,pos)
+
+        # update view
+        self.view.replace_piece(pos, new_piece)
+
+        # resume turn
+        self.state.current_turn = "black" if color == "white" else "white"

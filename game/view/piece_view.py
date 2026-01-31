@@ -153,3 +153,9 @@ class PieceView:
         rect = image.get_rect()
         rect.bottomleft = (int(self.current_position[0]), int(self.current_position[1]))
         surface.blit(image, rect)
+
+    def draw_at(self, screen, pos):
+        img = self.image
+        rect = img.get_rect(center=pos)
+        screen.blit(img, rect)
+

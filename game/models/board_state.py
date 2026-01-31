@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from game.models.pieces import piece
 from game.models.pieces.piece import *
 
 
@@ -22,11 +23,11 @@ class BoardState:
     def get_piece(self, pos: tuple[int, int]) -> Piece | None:
         return self.positions.get(pos)
 
-    def place_piece(self, piece: Piece, pos: tuple[int, int]) -> None:
+    def set_piece(self, piece: Piece, pos: tuple[int, int]) -> None:
         piece.position = pos
         self.positions[pos] = piece
 
-    def make_move(self, move : Move) -> tuple[Piece | None, list[dict]]:
+    def make_move(self, move: Move) -> tuple[Piece | None, list[dict], str | None]:
         """
         Move a piece from `from_pos` to `to_pos`, handling:
         - Normal moves
@@ -127,8 +128,14 @@ class BoardState:
         else:
             self.en_passant_target = None
 
+        # --- PAWN PROMOTION DETECTION ---
+        if isinstance(moving_piece, Pawn):
+            last_rank = 7 if moving_piece.color == "white" else 0
+            if to_pos[1] == last_rank:
+                print("promotion situation detected")
+                return captured_piece, moves_done, "promotion"
 
-        return captured_piece, moves_done
+        return captured_piece, moves_done, None
 
     def is_empty(self, pos: tuple[int, int]) -> bool:
         return pos not in self.positions
@@ -198,7 +205,7 @@ class BoardState:
                 continue
             color = "white" if char.isupper() else "black"
             piece_class = piece_map[char.lower()]
-            self.place_piece(piece_class(color), (col, row))
+            self.set_piece(piece_class(color), (col, row))
             col += 1
 
         # --- 2) Current turn ---
