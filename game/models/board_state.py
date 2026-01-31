@@ -328,3 +328,108 @@ class BoardState:
                 return pos
         return None
 
+    def is_in_check(self, color: str) -> bool:
+        king_pos = self.find_king(color)
+        if king_pos is None:
+            return False  # should not happen normally
+        enemy_color = "black" if color == "white" else "white"
+        return self.is_square_attacked(king_pos, enemy_color)
+
+    def get_legal_moves(self, pseudo_legal_moves: List[Move], state):
+        legal_moves: List[Move] = []
+        enemy = "black" if state.current_turn == "white" else "white"
+
+        for move in pseudo_legal_moves:
+            piece = move.piece
+            from_pos = piece.position
+            to_pos = move.target_pos
+
+            # ------------------------------------------------------------
+            # HANDLE CASTLING LEGALITY
+            # ------------------------------------------------------------
+            if isinstance(piece, King) and abs(to_pos[0] - from_pos[0]) == 2:
+                color = piece.color
+                row = 0 if color == "white" else 7
+
+                # 1. King must NOT be in check
+                if state.is_square_attacked(from_pos, enemy):
+                    continue
+
+                # 2. Which side?
+                if to_pos[0] == 6:  # kingside
+                    rook_from = (7, row)
+                    path = [(5, row), (6, row)]
+                    between = [(5, row)]
+                    rights_flag = "K"
+                else:  # queenside
+                    rook_from = (0, row)
+                    path = [(3, row), (2, row)]
+                    between = [(3, row), (2, row), (1, row)]
+                    rights_flag = "Q"
+
+                # 3. Rook must exist and be unmoved
+                rook_piece = state.positions.get(rook_from)
+                if not isinstance(rook_piece, Rook) or rook_piece.color != color:
+                    continue
+
+                # 4. Castling rights must allow it
+                if not state.castling_rights[color][rights_flag]:
+                    continue
+
+                # 5. Squares between king and rook must be empty
+                if any(s in state.positions for s in between):
+                    continue
+
+                # 6. King must not pass through check
+                illegal = False
+                for sq in path:
+                    if state.is_square_attacked(sq, enemy):
+                        illegal = True
+                        break
+                if illegal:
+                    continue
+
+                # → Castling is legal!
+                legal_moves.append(move)
+                continue
+
+            # ------------------------------------------------------------
+            # NORMAL MOVE + En Passant + Captures (simulate)
+            # ------------------------------------------------------------
+            temp_state = state.copy()
+            temp_state.make_move(move)
+
+            # After simulation — king may not be in check
+            king_pos = temp_state.find_king(piece.color)
+            if king_pos is None:
+                continue
+
+            if temp_state.is_square_attacked(king_pos, enemy):
+                continue  # illegal — king ends in check
+
+            # If we get here → legal
+            legal_moves.append(move)
+
+        return legal_moves
+
+
+
+    def all_legal_moves(self, color: str) -> list[Move]:
+        moves = []
+        for pos, piece in self.positions.items():
+            if piece.color != color:
+                continue
+            pseudo_moves = piece.get_allowed_moves(pos, self)
+            legal_moves = self.get_legal_moves(pseudo_moves, self)
+            moves.extend(legal_moves)
+        return moves
+
+    def is_checkmate(self, color: str) -> bool:
+        if not self.is_in_check(color):
+            return False
+        return len(self.all_legal_moves(color)) == 0
+
+    def is_stalemate(self, color: str) -> bool:
+        if self.is_in_check(color):
+            return False
+        return len(self.all_legal_moves(color)) == 0

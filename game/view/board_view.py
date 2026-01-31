@@ -4,6 +4,7 @@ from typing import Dict, Tuple, Optional
 
 import pygame
 
+
 from game.config import *
 from game.models.board_state import BoardState
 from game.models.move import Move
@@ -116,6 +117,13 @@ class BoardView:
 
         # Draw coordinates
         self._draw_coordinates(surface)
+        #
+        #
+        # text = f"Checkmate! {'White' if self.state.current_turn == 'black' else 'Black'} wins!"
+        # font = pygame.font.SysFont("Arial", 40)
+        # text_surf = font.render(text, True, (255, 0, 0))
+        # rect = text_surf.get_rect(center=(WINDOW_WIDTH // 2, 50))  # top center
+        # surface.blit(text_surf, rect)
 
     def _draw_coordinates(self, surface: pygame.Surface):
         sq = self.square_size

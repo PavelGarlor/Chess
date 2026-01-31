@@ -33,7 +33,7 @@ class ChessController:
             # Ask the piece for its allowed moves
             pseudo_legal_moves = piece.get_allowed_moves(grid_pos, self.state)
             #filter moves
-            self.view.highlight_moves = self.get_legal_moves(pseudo_legal_moves,self.state)
+            self.view.highlight_moves = self.state.get_legal_moves(pseudo_legal_moves,self.state)
         elif self.selected_pos:
             # Check if the clicked square is a valid target for the selected piece
             moves = [m for m in self.view.highlight_moves if m.target_pos == grid_pos]
@@ -71,6 +71,16 @@ class ChessController:
 
         # Switch turn
         self.state.current_turn= "black" if self.state.current_turn == "white" else "white"
+
+        # Check game state
+        enemy = self.state.current_turn
+        if self.state.is_checkmate(enemy):
+            print("CHECKMATE! " + enemy + " loses!")
+        elif self.state.is_in_check(enemy):
+            print("CHECK on", enemy)
+        elif self.state.is_stalemate(enemy):
+            print("STALEMATE")
+        return
 
     # ----------------------------
     # ANIMATION TRIGGER
@@ -116,82 +126,5 @@ class ChessController:
         grid_y = size - 1 - grid_y
 
         return grid_x, grid_y
-
-    def get_legal_moves(self, pseudo_legal_moves: List[Move], state):
-        legal_moves: List[Move] = []
-        enemy = "black" if state.current_turn == "white" else "white"
-
-        for move in pseudo_legal_moves:
-            piece = move.piece
-            from_pos = piece.position
-            to_pos = move.target_pos
-
-            # ------------------------------------------------------------
-            # HANDLE CASTLING LEGALITY
-            # ------------------------------------------------------------
-            if isinstance(piece, King) and abs(to_pos[0] - from_pos[0]) == 2:
-                color = piece.color
-                row = 0 if color == "white" else 7
-
-                # 1. King must NOT be in check
-                if state.is_square_attacked(from_pos, enemy):
-                    continue
-
-                # 2. Which side?
-                if to_pos[0] == 6:  # kingside
-                    rook_from = (7, row)
-                    path = [(5, row), (6, row)]
-                    between = [(5, row)]
-                    rights_flag = "K"
-                else:  # queenside
-                    rook_from = (0, row)
-                    path = [(3, row), (2, row)]
-                    between = [(3, row), (2, row), (1, row)]
-                    rights_flag = "Q"
-
-                # 3. Rook must exist and be unmoved
-                rook_piece = state.positions.get(rook_from)
-                if not isinstance(rook_piece, Rook) or rook_piece.color != color:
-                    continue
-
-                # 4. Castling rights must allow it
-                if not state.castling_rights[color][rights_flag]:
-                    continue
-
-                # 5. Squares between king and rook must be empty
-                if any(s in state.positions for s in between):
-                    continue
-
-                # 6. King must not pass through check
-                illegal = False
-                for sq in path:
-                    if state.is_square_attacked(sq, enemy):
-                        illegal = True
-                        break
-                if illegal:
-                    continue
-
-                # → Castling is legal!
-                legal_moves.append(move)
-                continue
-
-            # ------------------------------------------------------------
-            # NORMAL MOVE + En Passant + Captures (simulate)
-            # ------------------------------------------------------------
-            temp_state = state.copy()
-            temp_state.make_move(move)
-
-            # After simulation — king may not be in check
-            king_pos = temp_state.find_king(piece.color)
-            if king_pos is None:
-                continue
-
-            if temp_state.is_square_attacked(king_pos, enemy):
-                continue  # illegal — king ends in check
-
-            # If we get here → legal
-            legal_moves.append(move)
-
-        return legal_moves
 
 
