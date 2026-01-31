@@ -19,7 +19,7 @@ class BoardView:
     STATE_ANIMATING = "animating"
     STATE_STABLE = "stable"
     FONT_SIZE = 20
-    FONT_COLOR = (255, 255, 255)
+
 
     def __init__(
         self,
@@ -101,6 +101,9 @@ class BoardView:
     # DRAW
     # ------------------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:
+        # Draw FEN at the top
+        if DISPLAY_FEN : self._draw_fen(surface)
+
         # Draw squares
         for square in self.squares[: self.visible_square_count]:
             square.draw(surface)
@@ -200,6 +203,20 @@ class BoardView:
                 reverse=True,
         ):
             view.draw(surface)
+
+    def _draw_fen(self, surface: pygame.Surface):
+        fen = self.state.to_fen()
+
+        text_surf = self.font.render(fen, True, FONT_COLOR)
+        text_rect = text_surf.get_rect()
+
+        # CENTER horizontally above the board
+        text_rect.centerx = self.board_x + (self.SIZE * self.square_size) / 2
+
+        # Put it ABOVE the board
+        text_rect.bottom = self.board_y - 50  # 10px margin
+
+        surface.blit(text_surf, text_rect)
 
     # ------------------------------------------------------------------
     # EVENTS

@@ -127,6 +127,7 @@ class BoardState:
         else:
             self.en_passant_target = None
 
+
         return captured_piece, moves_done
 
     def is_empty(self, pos: tuple[int, int]) -> bool:
@@ -227,4 +228,78 @@ class BoardState:
             x = ord(file_char.lower()) - ord("a")
             y = int(rank_char) - 1
             self.en_passant_target = (x, y)
+
+    def to_fen(self) -> str:
+        """
+        Converts current board state back into full FEN:
+        pieces / turn / castling rights / en passant.
+        """
+        # -------------------------------------------------
+        # 1) PIECE PLACEMENT
+        # -------------------------------------------------
+        rows = []
+
+        for rank in range(self.SIZE - 1, -1, -1):  # 7 → 0
+            row_fen = ""
+            empty = 0
+
+            for file in range(self.SIZE):
+                pos = (file, rank)
+
+                if pos in self.positions:
+                    # flush accumulated empties
+                    if empty > 0:
+                        row_fen += str(empty)
+                        empty = 0
+
+                    piece = self.positions[pos]
+                    symbol = piece.SYMBOL
+
+                    # apply capitalization
+                    row_fen += symbol.upper() if piece.color == "white" else symbol.lower()
+                else:
+                    empty += 1
+
+            # flush trailing empties
+            if empty > 0:
+                row_fen += str(empty)
+
+            rows.append(row_fen)
+
+        board_fen = "/".join(rows)
+
+        # -------------------------------------------------
+        # 2) TURN
+        # -------------------------------------------------
+        turn_fen = "w" if self.current_turn == "white" else "b"
+
+        # -------------------------------------------------
+        # 3) CASTLING RIGHTS
+        # -------------------------------------------------
+        cr = ""
+
+        if self.castling_rights["white"]["K"]:
+            cr += "K"
+        if self.castling_rights["white"]["Q"]:
+            cr += "Q"
+        if self.castling_rights["black"]["K"]:
+            cr += "k"
+        if self.castling_rights["black"]["Q"]:
+            cr += "q"
+
+        castling_fen = cr if cr else "-"
+
+        # -------------------------------------------------
+        # 4) EN PASSANT TARGET
+        # -------------------------------------------------
+        if self.en_passant_target is None:
+            ep_fen = "-"
+        else:
+            x, y = self.en_passant_target
+            ep_fen = f"{chr(ord('a') + x)}{y + 1}"
+
+        # -------------------------------------------------
+        # RETURN FULL FEN
+        # -------------------------------------------------
+        return f"{board_fen} {turn_fen} {castling_fen} {ep_fen}"
 

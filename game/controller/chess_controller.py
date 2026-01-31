@@ -2,6 +2,7 @@ import pygame
 import time
 from typing import Optional, Tuple, List
 
+from game import PRINT_FEN
 from game.models.move import Move
 from game.models.pieces.piece import Piece, King
 from game.view.piece_view import PieceView
@@ -40,6 +41,8 @@ class ChessController:
                 # Take the first matching move (or handle special cases like promotion later)
                 move = moves[0]
                 self.attempt_move(self.selected_pos, move.target_pos)
+                self.state.fen = self.state.to_fen()
+                if PRINT_FEN: print(self.state.fen)
             # Clear selection
             self.selected_pos = None
             self.view.highlight_selected = None
@@ -56,6 +59,7 @@ class ChessController:
         # Perform the move; get captured piece and all moves done
         move = Move(piece,to_pos)
         captured_piece, moves_done = self.state.make_move(move)
+
 
         # Animate each move in the moves_done list
         for move in moves_done:

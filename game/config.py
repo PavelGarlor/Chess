@@ -13,8 +13,10 @@ ANIMATE_PIECES = True# Should the pieces animate from above?
 
 # Colors
 BACKGROUND_COLOR = (9, 18, 33)
-
+FONT_COLOR = (181, 179, 51)
 # Settings
+DISPLAY_FEN = True
+PRINT_FEN  = True
 cooldown_time = 0.5           # hover before falling
 dark_factor = 0.2             # darkness while hovering
 x_offset = 15
