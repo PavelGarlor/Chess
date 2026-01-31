@@ -34,7 +34,8 @@ chessboard_y = (window_height - chessboard_size) / 2
 
 # Create game state
 board_state = BoardState(
-    fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    # fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    fen="2bqkbnr/r1pppppp/ppn5/7Q/2BPP3/8/PPP2PPP/RNB1K1NR w KQk -"
 )
 
 # Create board view

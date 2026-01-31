@@ -75,15 +75,24 @@ class ChessController:
         self.state.current_turn= "black" if self.state.current_turn == "white" else "white"
 
         # Check game state
-        enemy = self.state.current_turn
+        enemy = self.state.current_turn  # The side that must move now
+
         if self.state.is_checkmate(enemy):
-            print("CHECKMATE! " + enemy + " loses!")
+            winner = "white" if enemy == "black" else "black"
+
+            print(f"CHECKMATE! {winner.upper()} WINS!")
+
             if self.game_view:
-                self.game_view.set_message(f"Checkmate! {enemy.capitalize()} loses!")
+                self.game_view.set_message(f"Checkmate! {winner.capitalize()} wins!")
+
         elif self.state.is_in_check(enemy):
             print("CHECK on", enemy)
+
         elif self.state.is_stalemate(enemy):
             print("STALEMATE")
+            if self.game_view:
+                self.game_view.set_message("Stalemate! Draw.")
+
         return
 
     # ----------------------------

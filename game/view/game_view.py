@@ -8,6 +8,7 @@ class GameView:
         self.screen = screen
         self.board_view = board_view
         self.font = pygame.font.SysFont("Arial", 32)
+        self.message_font = pygame.font.SysFont("Arial", 64, bold=True)
 
         # Example UI fields
         self.white_player : Player = Player("Pavel")
@@ -20,10 +21,12 @@ class GameView:
     def draw(self):
         # Draw background UI (timers, names, etc)
         self._draw_player_names()
-        self._draw_message()
 
         # Draw board inside UI
         self.board_view.draw(self.screen)
+
+        # winner message
+        self._draw_message()
 
     def _draw_player_names(self):
         white_name = self.white_player.username
@@ -39,9 +42,18 @@ class GameView:
         if not self.message:
             return
 
-        surf = self.font.render(self.message, True, (255, 0, 0))
+        # --- DARK OVERLAY ---
+        overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 150))  # (R,G,B,Alpha) → 150 = transparency
+        self.screen.blit(overlay, (0, 0))
+
+        # --- MESSAGE TEXT ---
+        surf = self.message_font.render(self.message, True, (227, 182, 18))
         rect = surf.get_rect(center=(
             self.screen.get_width() // 2,
-            80
+            self.screen.get_height() // 2
         ))
         self.screen.blit(surf, rect)
+
+
+
