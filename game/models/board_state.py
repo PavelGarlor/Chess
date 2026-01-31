@@ -303,3 +303,28 @@ class BoardState:
         # -------------------------------------------------
         return f"{board_fen} {turn_fen} {castling_fen} {ep_fen}"
 
+    def is_square_attacked(self, target_sq: tuple[int, int], attacker_color: str) -> bool:
+        """
+        Returns True if `attacker_color` attacks the square `target_sq`.
+        Used for king safety and castling legality.
+        """
+
+        for pos, piece in self.positions.items():
+            if piece.color != attacker_color:
+                continue
+
+            moves = piece.get_allowed_moves(pos, self)  # pseudo-legal moves
+
+            for mv in moves:
+                if mv.target_pos == target_sq:
+                    return True
+
+        return False
+
+    def find_king(self, color: str) -> tuple[int, int] | None:
+        """Return (x,y) of the king of given color, or None if not found."""
+        for pos, piece in self.positions.items():
+            if isinstance(piece, King) and piece.color == color:
+                return pos
+        return None
+

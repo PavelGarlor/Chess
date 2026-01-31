@@ -4,7 +4,7 @@ from typing import Optional, Tuple, List
 
 from game import PRINT_FEN
 from game.models.move import Move
-from game.models.pieces.piece import Piece, King
+from game.models.pieces.piece import Piece, King, Rook
 from game.view.piece_view import PieceView
 from game.view.board_view import BoardView
 from game.models.board_state import BoardState
@@ -117,38 +117,81 @@ class ChessController:
 
         return grid_x, grid_y
 
-    def get_legal_moves(self, pseudo_legal_moves: List[Move], state: "BoardState") -> List[Move]:
+    def get_legal_moves(self, pseudo_legal_moves: List[Move], state):
         legal_moves: List[Move] = []
+        enemy = "black" if state.current_turn == "white" else "white"
 
         for move in pseudo_legal_moves:
-            # 1. Make a temporary copy of the board
-            temp_state = state.copy()
+            piece = move.piece
+            from_pos = piece.position
+            to_pos = move.target_pos
 
-            # 2. Apply the move
+            # ------------------------------------------------------------
+            # HANDLE CASTLING LEGALITY
+            # ------------------------------------------------------------
+            if isinstance(piece, King) and abs(to_pos[0] - from_pos[0]) == 2:
+                color = piece.color
+                row = 0 if color == "white" else 7
+
+                # 1. King must NOT be in check
+                if state.is_square_attacked(from_pos, enemy):
+                    continue
+
+                # 2. Which side?
+                if to_pos[0] == 6:  # kingside
+                    rook_from = (7, row)
+                    path = [(5, row), (6, row)]
+                    between = [(5, row)]
+                    rights_flag = "K"
+                else:  # queenside
+                    rook_from = (0, row)
+                    path = [(3, row), (2, row)]
+                    between = [(3, row), (2, row), (1, row)]
+                    rights_flag = "Q"
+
+                # 3. Rook must exist and be unmoved
+                rook_piece = state.positions.get(rook_from)
+                if not isinstance(rook_piece, Rook) or rook_piece.color != color:
+                    continue
+
+                # 4. Castling rights must allow it
+                if not state.castling_rights[color][rights_flag]:
+                    continue
+
+                # 5. Squares between king and rook must be empty
+                if any(s in state.positions for s in between):
+                    continue
+
+                # 6. King must not pass through check
+                illegal = False
+                for sq in path:
+                    if state.is_square_attacked(sq, enemy):
+                        illegal = True
+                        break
+                if illegal:
+                    continue
+
+                # → Castling is legal!
+                legal_moves.append(move)
+                continue
+
+            # ------------------------------------------------------------
+            # NORMAL MOVE + En Passant + Captures (simulate)
+            # ------------------------------------------------------------
+            temp_state = state.copy()
             temp_state.make_move(move)
 
-            # 3. Find the king's position
-            king_pos = None
-            for pos, piece in temp_state.positions.items():
-                if isinstance(piece, King) and piece.color == move.piece.color:
-                    king_pos = pos
-                    break
-
+            # After simulation — king may not be in check
+            king_pos = temp_state.find_king(piece.color)
             if king_pos is None:
-                continue  # shouldn't happen
+                continue
 
-            # 4. Check if any enemy can attack the king
-            in_check = False
-            for pos, piece in temp_state.positions.items():
-                if piece.color != move.piece.color:
-                    enemy_moves = piece.get_allowed_moves(pos, temp_state)
-                    if any(m.target_pos == king_pos for m in enemy_moves):
-                        in_check = True
-                        break
+            if temp_state.is_square_attacked(king_pos, enemy):
+                continue  # illegal — king ends in check
 
-            # 5. Only keep safe moves
-            if not in_check:
-                legal_moves.append(move)
+            # If we get here → legal
+            legal_moves.append(move)
 
         return legal_moves
+
 
