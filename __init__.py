@@ -2,8 +2,10 @@ import sys
 import time
 import pygame
 
+from ai_engine.versions.ai_player import PlayerAI
 from game.config import *
 from game.models.board_state import BoardState
+from game.models.move import Move
 from game.view.board_view import BoardView
 from game.view.game_view import GameView
 from game.controller.chess_controller import ChessController
@@ -34,9 +36,9 @@ chessboard_y = (window_height - chessboard_size) / 2
 
 # Create game state
 board_state = BoardState(
-    # fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     # fen="2bqkbnr/r1pppppp/ppn5/7Q/2BPP3/8/PPP2PPP/RNB1K1NR w KQk -"
-    fen="2bqkbnr/rPpppppp/8/p3n2Q/2BPP3/8/1PP2PPP/RNB1K1NR b KQk -"
+    # fen="2bqkbnr/rPpppppp/8/p3n2Q/2BPP3/8/1PP2PPP/RNB1K1NR b KQk -"
 )
 
 # Create board view
@@ -65,6 +67,7 @@ for piece_view in board_view.piece_views.values():
 # --------------------------------------------------
 while running:
     now = time.time()
+    move = None
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -76,7 +79,12 @@ while running:
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                controller.handle_mouse_click(event.pos)
+                move = controller.handle_mouse_click(event.pos)
+
+    currentPlayer =  game_view.white_player  if controller.state.current_turn == "white" else game_view.black_player
+    if isinstance(currentPlayer,PlayerAI):
+        move = currentPlayer.request_move(controller.state)
+    if move is not None : controller.attempt_move(move)
 
     # UPDATE
     board_view.update(now)

@@ -1,5 +1,6 @@
 import pygame
-from game import size_multiplier, y_offset, x_offset, dark_factor
+
+from game.config import *
 
 
 class Square:

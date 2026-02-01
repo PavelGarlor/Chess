@@ -1,8 +1,5 @@
-import pygame
-import time
-from typing import Optional, Tuple, List
+from typing import Optional
 
-from game import PRINT_FEN
 from game.models.pieces.piece import *
 from game.view.piece_view import PieceView
 from game.view.board_view import BoardView
@@ -20,48 +17,53 @@ class ChessController:
     # ----------------------------
     # MAIN INPUT HANDLER
     # ----------------------------
-    def handle_mouse_click(self, mouse_pos: Tuple[int, int]):
+    def handle_mouse_click(self, mouse_pos: Tuple[int, int]) -> Move | None:
         grid_pos = self.view.pixel_to_grid(mouse_pos)
         if not grid_pos:
-            return
+            return None
 
-        piece = self.state.get_piece(grid_pos)
+        # If promotion UI is open → handle & exit
         if self.game_view.promotion_active:
             self._handle_promotion_click(mouse_pos)
-            return
+            return None
 
+        piece = self.state.get_piece(grid_pos)
+
+        # Selecting a piece
         if piece and piece.color == self.state.current_turn:
-            # Select piece
             self.selected_pos = grid_pos
             self.view.highlight_selected = grid_pos
-            # Ask the piece for its allowed moves
-            pseudo_legal_moves = piece.get_allowed_moves(grid_pos, self.state)
-            #filter moves
-            self.view.highlight_moves = self.state.get_legal_moves(pseudo_legal_moves,self.state)
-        elif self.selected_pos:
-            # Check if the clicked square is a valid target for the selected piece
+
+            pseudo_moves = piece.get_allowed_moves(grid_pos, self.state)
+            self.view.highlight_moves = self.state.get_legal_moves(pseudo_moves, self.state)
+            return None
+
+        # Trying to make a move
+        if self.selected_pos:
             moves = [m for m in self.view.highlight_moves if m.target_pos == grid_pos]
             if moves:
-                # Take the first matching move (or handle special cases like promotion later)
                 move = moves[0]
-                self.attempt_move(self.selected_pos, move.target_pos)
-                self.state.fen = self.state.to_fen()
-                if PRINT_FEN: print(self.state.fen)
-            # Clear selection
+
+                # Clear UI selection
+                self.selected_pos = None
+                self.view.highlight_selected = None
+                self.view.highlight_moves = []
+
+                # RETURN the move to main loop
+                return move
+
+            # Not a valid move → reset selection
             self.selected_pos = None
             self.view.highlight_selected = None
             self.view.highlight_moves = []
 
+        return None
+
     # ----------------------------
     # MOVE LOGIC
     # ----------------------------
-    def attempt_move(self, from_pos: Tuple[int, int], to_pos: Tuple[int, int]):
-        piece: Optional[Piece] = self.state.get_piece(from_pos)
-        if piece is None:
-            return
+    def attempt_move(self, move :Move):
 
-        # Perform the move; get captured piece and all moves done
-        move = Move(piece,to_pos)
         captured_piece, moves_done, status = self.state.make_move(move)
 
         # Animate each move in the moves_done list
@@ -76,12 +78,17 @@ class ChessController:
             # freeze game
             self.state.current_turn = None
             # ask GameView to show promotion UI
-            self.game_view.start_promotion(piece.color, to_pos)
+            self.game_view.start_promotion(move.piece.color, move.target_pos)
             return
 
         # Switch turn
         self.state.current_turn= "black" if self.state.current_turn == "white" else "white"
 
+        # After switching, check if the next player is AI
+        next_player = (
+            self.game_view.white_player if self.state.current_turn == "white"
+            else self.game_view.black_player
+        )
         # Check game state
         enemy = self.state.current_turn  # The side that must move now
 
@@ -173,3 +180,4 @@ class ChessController:
 
         # resume turn
         self.state.current_turn = "black" if color == "white" else "white"
+

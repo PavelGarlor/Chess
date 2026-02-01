@@ -1,7 +1,9 @@
 import pygame
 
+from ai_engine.versions.v0_random_AI import *
 from game.models.pieces.piece import *
 from game.models.player import Player
+from game.models.real_player import RealPlayer
 from game.view.piece_view import PieceView
 
 
@@ -13,8 +15,8 @@ class GameView:
         self.message_font = pygame.font.SysFont("Arial", 64, bold=True)
 
         # Example UI fields
-        self.white_player : Player = Player("Pavel")
-        self.black_player: Player = Player("BOT1")
+        self.white_player : Player = RealPlayer("white" ,"Pavel")
+        self.black_player: Player = RandomAI("black" ,"BOT2")
         self.message = None  # e.g. "Checkmate! White wins"
 
         self.promotion_active = False
