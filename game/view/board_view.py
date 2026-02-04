@@ -188,6 +188,7 @@ class BoardView:
         # -----------------------
         # Highlight enemy attacks
         # -----------------------
+        if not SHOW_ATTACKED_SQUARES: return
         enemy_color = "black" if self.state.current_turn == "white" else "white"
         for x in range(self.SIZE):
             for y in range(self.SIZE):

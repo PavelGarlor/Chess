@@ -443,3 +443,33 @@ class BoardState:
         if self.is_in_check(color):
             return False
         return len(self.all_legal_moves(color)) == 0
+
+    def undo_move(self, moves_done: list[dict], captured_piece):
+        """
+        Undo a list of moves performed by make_move.
+        moves_done: list of dicts with keys "piece", "from", "to", "captured"
+        captured_piece: the piece that was captured in the main move (if any)
+        """
+        # Reverse the moves in reverse order
+        for move in reversed(moves_done):
+            piece = move["piece"]
+            from_pos = move["from"]
+            to_pos = move["to"]
+            captured = move["captured"]
+
+            # Move the piece back
+            self.positions[from_pos] = piece
+            piece.position = from_pos
+
+            # Remove from destination
+            if to_pos in self.positions:
+                del self.positions[to_pos]
+
+            # Restore captured piece
+            if captured:
+                self.positions[to_pos] = captured
+                captured.position = to_pos
+
+        # If your board state tracks other things like en passant or castling rights,
+        # you should also restore them here if make_move changed them.
+
