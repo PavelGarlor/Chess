@@ -15,7 +15,7 @@ class GameView:
         self.message_font = pygame.font.SysFont("Arial", 64, bold=True)
 
         # Example UI fields
-        self.white_player : Player = RealPlayer("white" ,"Pavel")
+        self.white_player : Player = RandomAI("white" ,"Pavel")
         self.black_player: Player = RandomAI("black" ,"BOT2")
         self.message = None  # e.g. "Checkmate! White wins"
 

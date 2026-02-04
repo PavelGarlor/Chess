@@ -1,10 +1,11 @@
 from typing import Optional
 
+from ai_engine.versions.ai_player import PlayerAI
 from game.models.pieces.piece import *
 from game.view.piece_view import PieceView
 from game.view.board_view import BoardView
 from game.models.board_state import BoardState
-
+import threading
 
 class ChessController:
     def __init__(self, board_state: BoardState, board_view: BoardView, game_view=None):
@@ -12,6 +13,9 @@ class ChessController:
         self.view = board_view
         self.game_view = game_view
         self.selected_pos: Optional[Tuple[int, int]] = None
+        self.ai_thread = None
+        self.ai_result = None
+        self.ai_thinking = False
 
 
     # ----------------------------
@@ -89,6 +93,9 @@ class ChessController:
             self.game_view.white_player if self.state.current_turn == "white"
             else self.game_view.black_player
         )
+
+        if isinstance(next_player, PlayerAI):
+            self.start_ai_move(next_player)
         # Check game state
         enemy = self.state.current_turn  # The side that must move now
 
@@ -181,3 +188,26 @@ class ChessController:
         # resume turn
         self.state.current_turn = "black" if color == "white" else "white"
 
+
+
+    def start_ai_move(self, ai_player):
+        if self.ai_thinking:
+            return  # AI is already thinking
+
+        self.ai_thinking = True
+        self.ai_result = None
+
+        def worker():
+            result = ai_player.request_move(self.state)
+            self.ai_result = result
+            self.ai_thinking = False
+
+        self.ai_thread = threading.Thread(target=worker, daemon=True)
+        self.ai_thread.start()
+
+    def get_ai_move(self):
+        if not self.ai_thinking and self.ai_result:
+            move = self.ai_result
+            self.ai_result = None
+            return move
+        return None

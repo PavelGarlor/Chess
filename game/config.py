@@ -9,7 +9,7 @@ DARK_SQ = (13, 74, 27)
 animation_duration = 0.2
 spawn_interval = 0.05
 ANIMATE_BOARD = False       # Should the board squares animate in?
-ANIMATE_PIECES = True# Should the pieces animate from above?
+ANIMATE_PIECES = False# Should the pieces animate from above?
 
 # Colors
 BACKGROUND_COLOR = (9, 18, 33)

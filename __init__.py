@@ -54,7 +54,8 @@ game_view = GameView(screen, board_view)
 
 # Create controller WITH game_view
 controller = ChessController(board_state, board_view, game_view)
-
+if isinstance(game_view.white_player, PlayerAI):
+    controller.start_ai_move(game_view.white_player)
 # --------------------------------------------------
 # START SPAWN ANIMATIONS
 # --------------------------------------------------
@@ -67,34 +68,37 @@ for piece_view in board_view.piece_views.values():
 # --------------------------------------------------
 while running:
     now = time.time()
-    move = None
+    human_move = None
 
+    # Handle input
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                running = False
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            running = False
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                move = controller.handle_mouse_click(event.pos)
+        # Human move
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            human_move = controller.handle_mouse_click(event.pos)
 
-    currentPlayer =  game_view.white_player  if controller.state.current_turn == "white" else game_view.black_player
-    if isinstance(currentPlayer,PlayerAI):
-        move = currentPlayer.request_move(controller.state)
-    if move is not None : controller.attempt_move(move)
+    # --- H U M A N   M O V E ---
+    if human_move is not None:
+        controller.attempt_move(human_move)
 
-    # UPDATE
+    # --- A I   M O V E ---
+    ai_move = controller.get_ai_move()
+    if ai_move is not None:
+        controller.attempt_move(ai_move)
+
+    # Continue updating + drawing
     board_view.update(now)
-
-    # DRAW
     screen.fill(BACKGROUND_COLOR)
-    game_view.draw()          # ← NOW using GameView instead of BoardView
-
+    game_view.draw()
     pygame.display.flip()
     clock.tick(60)
+
+
 
 pygame.quit()
 sys.exit()
