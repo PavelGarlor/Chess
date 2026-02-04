@@ -323,7 +323,7 @@ class BoardState:
             if piece.color != attacker_color:
                 continue
 
-            moves = piece.get_allowed_moves(pos, self)  # pseudo-legal moves
+            moves = piece.get_allowed_moves(pos, self,True)  # pseudo-legal moves
 
             for mv in moves:
                 if mv.target_pos == target_sq:

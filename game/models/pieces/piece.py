@@ -17,6 +17,8 @@ class Piece(ABC):
         self,
         position: Position,
         board_state,
+        for_attack=False
+
     ) -> List[Move]:
         """
         Returns all moves ignoring check/checkmate.
@@ -34,26 +36,35 @@ class Piece(ABC):
 class Pawn(Piece):
     SYMBOL = "p"
 
-    def get_allowed_moves(self, position, board_state):
+    def get_allowed_moves(self, position, board_state, for_attack=False):
+        """
+        Generate all allowed moves for this pawn.
+
+        :param position: current pawn position (x, y)
+        :param board_state: BoardState object
+        :param for_attack: if True, include diagonal squares even if empty (for is_square_attacked)
+        :return: list of Move objects
+        """
         moves: List[Move] = []
         x, y = position
 
         direction = 1 if self.color == "white" else -1
         start_row = 1 if self.color == "white" else 6
         promotion_rank = 7 if self.color == "white" else 0
+
         # -----------------------
         # Forward move (1 square)
         # -----------------------
         one_step = (x, y + direction)
-        if board_state.is_empty(one_step):
+        if board_state.is_empty(one_step) and not for_attack:
 
-            # PROMOTION
+            # Promotion
             if one_step[1] == promotion_rank:
                 moves.extend([
-                    Move(self, one_step,Queen(self.color,self.position)),
-                    Move(self, one_step, Knight(self.color, self.position)),
-                    Move(self, one_step, Bishop(self.color, self.position)),
-                    Move(self, one_step, Rook(self.color, self.position)),
+                    Move(self, one_step, Queen(self.color, position)),
+                    Move(self, one_step, Knight(self.color, position)),
+                    Move(self, one_step, Bishop(self.color, position)),
+                    Move(self, one_step, Rook(self.color, position)),
                 ])
             else:
                 moves.append(Move(self, one_step))
@@ -66,31 +77,28 @@ class Pawn(Piece):
                 moves.append(Move(self, two_step))
 
         # -----------------------
-        # Captures
+        # Captures (diagonal)
         # -----------------------
         for dx in (-1, 1):
-            capture_pos = (x + dx, y + direction)
-            if board_state.is_enemy(capture_pos, self.color):
-
-                # PROMOTION CAPTURE
-                if capture_pos[1] == promotion_rank:
-                    moves.extend([
-                        Move(self, one_step, Queen(self.color, self.position)),
-                        Move(self, one_step, Knight(self.color, self.position)),
-                        Move(self, one_step, Bishop(self.color, self.position)),
-                        Move(self, one_step, Rook(self.color, self.position)),
-                    ])
-                else:
-                    moves.append(Move(self, capture_pos))
-
-        # -----------------------
-        # En passant
-        # -----------------------
-        ep = board_state.en_passant_target
-        if ep:
-            ep_x, ep_y = ep
-            if ep_y == y + direction and abs(ep_x - x) == 1:
-                moves.append(Move(self, ep))
+            target = (x + dx, y + direction)
+            if for_attack:
+                # For attack checking, include diagonal squares even if empty
+                moves.append(Move(self, target))
+            else:
+                if board_state.is_enemy(target, self.color):
+                    # Promotion capture
+                    if target[1] == promotion_rank:
+                        moves.extend([
+                            Move(self, target, Queen(self.color, position)),
+                            Move(self, target, Knight(self.color, position)),
+                            Move(self, target, Bishop(self.color, position)),
+                            Move(self, target, Rook(self.color, position)),
+                        ])
+                    else:
+                        moves.append(Move(self, target))
+                # En passant
+                elif board_state.en_passant_target == target:
+                    moves.append(Move(self, target))
 
         return moves
 
@@ -100,7 +108,7 @@ class Pawn(Piece):
 # -------------------------------------------------
 class Rook(Piece):
     SYMBOL = "r"
-    def get_allowed_moves(self, position, board_state):
+    def get_allowed_moves(self, position, board_state,for_attack=False):
         moves: List[Move] = []
         x, y = position
         directions = [
@@ -132,7 +140,7 @@ class Rook(Piece):
 # -------------------------------------------------
 class Bishop(Piece):
     SYMBOL = "b"
-    def get_allowed_moves(self, position, board_state):
+    def get_allowed_moves(self, position, board_state,for_attack=False):
         moves: List[Move] = []
         x, y = position
         directions = [
@@ -165,7 +173,7 @@ class Bishop(Piece):
 # -------------------------------------------------
 class Knight(Piece):
     SYMBOL = "n"
-    def get_allowed_moves(self, position, board_state):
+    def get_allowed_moves(self, position, board_state,for_attack=False):
         moves: List[Move] = []
         x, y = position
 
@@ -196,7 +204,7 @@ class Knight(Piece):
 # -------------------------------------------------
 class Queen(Piece):
     SYMBOL = "q"
-    def get_allowed_moves(self, position, board_state):
+    def get_allowed_moves(self, position, board_state,for_attack=False):
         moves: List[Move] = []
         x, y = position
         directions = [
@@ -234,7 +242,7 @@ class Queen(Piece):
 class King(Piece):
     SYMBOL = "k"
 
-    def get_allowed_moves(self, position, board_state):
+    def get_allowed_moves(self, position, board_state,for_attack=False):
         moves: List[Move] = []
         x, y = position
         color = self.color
