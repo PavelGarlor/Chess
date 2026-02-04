@@ -144,7 +144,7 @@ class PieceView:
     # ------------------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:
         """Draw the piece aligned to bottom-left of square"""
-        if self.is_captured and self.alpha <= 0:
+        if self.is_captured :
             return
 
         image = self.image.copy()
