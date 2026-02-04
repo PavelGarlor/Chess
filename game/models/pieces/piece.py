@@ -8,9 +8,9 @@ Position = Tuple[int, int]
 
 class Piece(ABC):
     SYMBOL = "?"
-    def __init__(self, color: str):
+    def __init__(self, color: str, position = None):
         self.color = color
-        self.position: Position | None = None
+        self.position: Position | None = position
 
     @abstractmethod
     def get_allowed_moves(
@@ -33,43 +33,64 @@ class Piece(ABC):
 # -------------------------------------------------
 class Pawn(Piece):
     SYMBOL = "p"
+
     def get_allowed_moves(self, position, board_state):
-        moves : List[Move] = []
+        moves: List[Move] = []
         x, y = position
 
         direction = 1 if self.color == "white" else -1
         start_row = 1 if self.color == "white" else 6
-
+        promotion_rank = 7 if self.color == "white" else 0
         # -----------------------
         # Forward move (1 square)
         # -----------------------
         one_step = (x, y + direction)
         if board_state.is_empty(one_step):
-            moves.append(Move(self,one_step))
+
+            # PROMOTION
+            if one_step[1] == promotion_rank:
+                moves.extend([
+                    Move(self, one_step,Queen(self.color,self.position)),
+                    Move(self, one_step, Knight(self.color, self.position)),
+                    Move(self, one_step, Bishop(self.color, self.position)),
+                    Move(self, one_step, Rook(self.color, self.position)),
+                ])
+            else:
+                moves.append(Move(self, one_step))
 
             # -----------------------
             # Forward move (2 squares)
             # -----------------------
             two_step = (x, y + 2 * direction)
             if y == start_row and board_state.is_empty(two_step):
-                moves.append(Move(self,two_step))
+                moves.append(Move(self, two_step))
 
         # -----------------------
-        # Captures (diagonal)
+        # Captures
         # -----------------------
         for dx in (-1, 1):
             capture_pos = (x + dx, y + direction)
             if board_state.is_enemy(capture_pos, self.color):
-                moves.append(Move(self,capture_pos))
+
+                # PROMOTION CAPTURE
+                if capture_pos[1] == promotion_rank:
+                    moves.extend([
+                        Move(self, one_step, Queen(self.color, self.position)),
+                        Move(self, one_step, Knight(self.color, self.position)),
+                        Move(self, one_step, Bishop(self.color, self.position)),
+                        Move(self, one_step, Rook(self.color, self.position)),
+                    ])
+                else:
+                    moves.append(Move(self, capture_pos))
+
         # -----------------------
-        # En passant capture
+        # En passant
         # -----------------------
         ep = board_state.en_passant_target
         if ep:
             ep_x, ep_y = ep
-            # Pawn can move diagonally into ep square
             if ep_y == y + direction and abs(ep_x - x) == 1:
-                moves.append(Move(self,ep))
+                moves.append(Move(self, ep))
 
         return moves
 

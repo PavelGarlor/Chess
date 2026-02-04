@@ -15,8 +15,8 @@ class GameView:
         self.message_font = pygame.font.SysFont("Arial", 64, bold=True)
 
         # Example UI fields
-        self.white_player : Player = RandomAI("white" ,"Pavel")
-        self.black_player: Player = RandomAI("black" ,"BOT2")
+        self.white_player : Player = RealPlayer("white" ,"Pavel")
+        self.black_player: Player = RealPlayer("black" ,"BOT2")
         self.message = None  # e.g. "Checkmate! White wins"
 
         self.promotion_active = False
@@ -36,8 +36,8 @@ class GameView:
         # winner message
         self._draw_message()
 
-        if self.promotion_active:
-            self._draw_promotion_menu()
+        # if self.promotion_active:
+        #     self._draw_promotion_menu()
 
     def _draw_player_names(self):
         white_name = self.white_player.username

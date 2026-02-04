@@ -12,7 +12,7 @@ class RandomAI(PlayerAI):
 
     def request_move(self, board_state : BoardState):
         """Return a random legal move."""
-        time.sleep(2)  # ← AI "thinks" for 2 seconds
+        time.sleep(1)  # ← AI "thinks" for 2 seconds
         legal_moves = board_state.all_legal_moves(self.color)
 
         if not legal_moves:

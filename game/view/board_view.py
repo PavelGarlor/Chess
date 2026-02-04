@@ -152,6 +152,7 @@ class BoardView:
             surface.blit(text_surf, rect)
 
     def _draw_highlights(self, surface: pygame.Surface):
+        # Highlight selected square
         if self.highlight_selected:
             x, y = self.highlight_selected
             rect = pygame.Rect(
@@ -160,12 +161,9 @@ class BoardView:
                 self.square_size,
                 self.square_size,
             )
-            self._draw_transparent_rect(
-                surface,
-                (128, 255, 120),  # teal / green
-                rect,
-                186  # transparency (0–255)
-            )
+            self._draw_transparent_rect(surface, (128, 255, 120), rect, 186)  # green
+
+        # Highlight en passant target
         if self.state.en_passant_target:
             x, y = self.state.en_passant_target
             rect = pygame.Rect(
@@ -174,30 +172,33 @@ class BoardView:
                 self.square_size,
                 self.square_size,
             )
-            self._draw_transparent_rect(
-                surface,
-                (255, 0, 0),  # teal / green
-                rect,
-                186  # transparency (0–255)
-            )
+            self._draw_transparent_rect(surface, (255, 0, 0), rect, 186)  # red
 
-
+        # Highlight allowed moves for selected piece
         for move in self.highlight_moves:
-            x,y = move.target_pos
+            x, y = move.target_pos
             rect = pygame.Rect(
                 self.board_x + x * self.square_size,
                 self.board_y + (self.SIZE - 1 - y) * self.square_size,
                 self.square_size,
                 self.square_size,
             )
-            #pygame.draw.rect(surface, (0.2, 140, 141, 186), rect)  # green overlay
-            self._draw_transparent_rect(
-                surface,
-                (140, 141, 186),  # teal / green
-                rect,
-                186  # transparency (0–255)
-            )
+            self._draw_transparent_rect(surface, (140, 141, 186), rect, 186)  # teal
 
+        # -----------------------
+        # Highlight enemy attacks
+        # -----------------------
+        enemy_color = "black" if self.state.current_turn == "white" else "white"
+        for x in range(self.SIZE):
+            for y in range(self.SIZE):
+                if self.state.is_square_attacked((x, y), enemy_color):
+                    rect = pygame.Rect(
+                        self.board_x + x * self.square_size,
+                        self.board_y + (self.SIZE - 1 - y) * self.square_size,
+                        self.square_size,
+                        self.square_size,
+                    )
+                    self._draw_transparent_rect(surface, (255, 0, 0), rect, 120)  # semi-transparent red
 
     def _draw_transparent_rect(self,surface, color, rect, alpha):
         overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)

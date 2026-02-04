@@ -27,9 +27,9 @@ class ChessController:
             return None
 
         # If promotion UI is open → handle & exit
-        if self.game_view.promotion_active:
-            self._handle_promotion_click(mouse_pos)
-            return None
+        # if self.game_view.promotion_active:
+        #     self._handle_promotion_click(mouse_pos)
+        #     return None
 
         piece = self.state.get_piece(grid_pos)
 
@@ -71,19 +71,16 @@ class ChessController:
         captured_piece, moves_done, status = self.state.make_move(move)
 
         # Animate each move in the moves_done list
-        for move in moves_done:
-            move_piece = move["piece"]
-            move_from = move["from"]
-            move_to = move["to"]
-            move_captured = move["captured"]
+        for move_done in moves_done:
+            print(move)
+            move_piece = move_done["piece"]
+            move_from = move_done["from"]
+            move_to = move_done["to"]
+            move_captured = move_done["captured"]
+            promotion = move_done["promotes"]
             self.animate_move(move_piece, move_from, move_to, move_captured)
+            if promotion: self.view.replace_piece(move_to, promotion)
 
-        if status == "promotion":
-            # freeze game
-            self.state.current_turn = None
-            # ask GameView to show promotion UI
-            self.game_view.start_promotion(move.piece.color, move.target_pos)
-            return
 
         # Switch turn
         self.state.current_turn= "black" if self.state.current_turn == "white" else "white"

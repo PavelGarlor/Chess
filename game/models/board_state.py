@@ -46,8 +46,9 @@ class BoardState:
         from_pos = move.piece.position
         to_pos = move.target_pos
         moving_piece = self.positions.get(from_pos)
+        is_promotion = move.promotion is not None
         if moving_piece is None:
-            return None, moves_done
+            return None, moves_done, None
 
         captured_piece = None
 
@@ -97,7 +98,7 @@ class BoardState:
             captured_piece = self.positions.pop(captured_square, None)
             if captured_piece:
                 moves_done.append(
-                    {"piece": captured_piece, "from": captured_square, "to": captured_square, "captured": None})
+                    {"piece": captured_piece, "from": captured_square, "to": captured_square, "captured": None, "promotes": None})
         else:
             captured_piece = self.positions.pop(to_pos, None)
 
@@ -109,15 +110,17 @@ class BoardState:
             if rook_piece:
                 rook_piece.position = rook_to
                 self.positions[rook_to] = rook_piece
-                moves_done.append({"piece": rook_piece, "from": rook_from, "to": rook_to, "captured": None})
+                moves_done.append({"piece": rook_piece, "from": rook_from, "to": rook_to, "captured": None, "promotes": None})
 
         # -----------------------------------
         # MOVE THE PIECE
         # -----------------------------------
         self.positions.pop(from_pos, None)
         moving_piece.position = to_pos
-        self.positions[to_pos] = moving_piece
-        moves_done.append({"piece": moving_piece, "from": from_pos, "to": to_pos, "captured": captured_piece})
+        if move.promotion:
+            move.promotion.position = to_pos
+        self.positions[to_pos] = move.promotion if move.promotion else moving_piece
+        moves_done.append({"piece": moving_piece, "from": from_pos, "to": to_pos, "captured": captured_piece , "promotes": move.promotion})
 
         # -----------------------------------
         # SET EN PASSANT TARGET
