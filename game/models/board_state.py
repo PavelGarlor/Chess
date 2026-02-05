@@ -31,34 +31,34 @@ class BoardState:
         """
         Move a piece from `from_pos` to `to_pos`, handling:
         - Normal moves
-
         - Captures
         - En passant
         - Castling
         - Castling rights
+        - Promotions
 
         Returns:
             captured_piece: The main captured piece (or None)
-            moves_done: List of dicts for all moves performed:
-                {"piece": Piece, "from": (x, y), "to": (x, y), "captured": Optional[Piece]}
+            moves_done: List of dicts for all moves performed (for undo)
+            status: "promotion" if pawn promoted, else None
         """
         moves_done = []
         from_pos = move.piece.position
         to_pos = move.target_pos
         moving_piece = self.positions.get(from_pos)
-        is_promotion = move.promotion is not None
         if moving_piece is None:
             return None, moves_done, None
 
         captured_piece = None
 
-        # -----------------------------------
-        # TRACK CASTLING RIGHTS
-        # -----------------------------------
+        # --- Save castling & en passant snapshot for undo ---
+        castling_before = {color: rights.copy() for color, rights in self.castling_rights.items()}
+        en_passant_before = self.en_passant_target
+
+        # --- Update castling rights if king or rook moves ---
         if isinstance(moving_piece, King):
             self.castling_rights[moving_piece.color]["K"] = False
             self.castling_rights[moving_piece.color]["Q"] = False
-
         if isinstance(moving_piece, Rook):
             if moving_piece.color == "white":
                 if from_pos == (0, 0):
@@ -71,9 +71,7 @@ class BoardState:
                 elif from_pos == (7, 7):
                     self.castling_rights["black"]["K"] = False
 
-        # -----------------------------------
-        # DETECT CASTLING BEFORE MOVING KING
-        # -----------------------------------
+        # --- Detect castling ---
         is_castling = False
         rook_from = None
         rook_to = None
@@ -88,85 +86,109 @@ class BoardState:
                 rook_from = (0, from_pos[1])
                 rook_to = (3, from_pos[1])
 
-        # -----------------------------------
-        # HANDLE CAPTURES
-        # -----------------------------------
+        # --- Handle captures ---
         if isinstance(moving_piece, Pawn) and to_pos == self.en_passant_target:
-            # En passant capture
+            # en passant capture
             direction = 1 if moving_piece.color == "white" else -1
             captured_square = (to_pos[0], to_pos[1] - direction)
             captured_piece = self.positions.pop(captured_square, None)
             if captured_piece:
-                moves_done.append(
-                    {"piece": captured_piece, "from": captured_square, "to": captured_square, "captured": None, "promotes": None})
+                moves_done.append({
+                    "piece": captured_piece, "from": captured_square,
+                    "to": captured_square, "captured": None, "promotes": None
+                })
         else:
             captured_piece = self.positions.pop(to_pos, None)
 
-        # -----------------------------------
-        # CASTLING: MOVE ROOK
-        # -----------------------------------
+        # --- Handle castling rook move ---
         if is_castling:
             rook_piece = self.positions.pop(rook_from, None)
             if rook_piece:
                 rook_piece.position = rook_to
                 self.positions[rook_to] = rook_piece
-                moves_done.append({"piece": rook_piece, "from": rook_from, "to": rook_to, "captured": None, "promotes": None})
+                moves_done.append({
+                    "piece": rook_piece, "from": rook_from, "to": rook_to,
+                    "captured": None, "promotes": None
+                })
 
-        # -----------------------------------
-        # MOVE THE PIECE
-        # -----------------------------------
+        # --- Move the piece ---
         self.positions.pop(from_pos, None)
         moving_piece.position = to_pos
         if move.promotion:
-            move.promotion.position = to_pos
-        self.positions[to_pos] = move.promotion if move.promotion else moving_piece
-        moves_done.append({"piece": moving_piece, "from": from_pos, "to": to_pos, "captured": captured_piece , "promotes": move.promotion})
+            self.positions[to_pos] = move.promotion
+            moves_done.append({
+                "piece": moving_piece, "from": from_pos, "to": to_pos,
+                "captured": captured_piece, "promotes": move.promotion
+            })
+        else:
+            self.positions[to_pos] = moving_piece
+            moves_done.append({
+                "piece": moving_piece, "from": from_pos, "to": to_pos,
+                "captured": captured_piece, "promotes": None
+            })
 
-        # -----------------------------------
-        # SET EN PASSANT TARGET
-        # -----------------------------------
+        # --- Set en passant target ---
         if isinstance(moving_piece, Pawn) and abs(to_pos[1] - from_pos[1]) == 2:
             mid_rank = (to_pos[1] + from_pos[1]) // 2
             self.en_passant_target = (from_pos[0], mid_rank)
         else:
             self.en_passant_target = None
 
-        # --- PAWN PROMOTION DETECTION ---
-        if isinstance(moving_piece, Pawn):
-            last_rank = 7 if moving_piece.color == "white" else 0
-            if to_pos[1] == last_rank:
-                return captured_piece, moves_done, "promotion"
+        # --- Toggle turn ---
+        self.current_turn = "white" if self.current_turn == "black" else "black"
 
-        return captured_piece, moves_done, None
+        # --- Attach snapshots for undo ---
+        for m in moves_done:
+            m["castling_before"] = castling_before
+            m["en_passant_before"] = en_passant_before
+
+        # --- Return ---
+        status = "promotion" if move.promotion else None
+        return captured_piece, moves_done, status
+
     def undo_move(self, moves_done: list[dict], captured_piece):
         """
-        Undo a list of moves performed by make_move.
-        moves_done: list of dicts with keys "piece", "from", "to", "captured"
-        captured_piece: the piece that was captured in the main move (if any)
+        Undo a move performed by make_move() using the moves_done list.
+        Fully restores:
+          - piece positions
+          - captures
+          - promotions
+          - castling rights
+          - en passant target
+          - turn
         """
-        # Reverse the moves in reverse order
+        # Reverse moves in reverse order
         for move in reversed(moves_done):
             piece = move["piece"]
             from_pos = move["from"]
             to_pos = move["to"]
             captured = move["captured"]
+            promotion = move.get("promotes", None)
 
-            # Move the piece back
-            self.positions[from_pos] = piece
-            piece.position = from_pos
-
-            # Remove from destination
+            # Remove piece from destination
             if to_pos in self.positions:
                 del self.positions[to_pos]
 
+            # Restore promoted pawn or normal piece
+            if promotion:
+                piece.position = from_pos
+                self.positions[from_pos] = piece
+            else:
+                piece.position = from_pos
+                self.positions[from_pos] = piece
+
             # Restore captured piece
             if captured:
-                self.positions[to_pos] = captured
                 captured.position = to_pos
+                self.positions[to_pos] = captured
 
-        # If your board state tracks other things like en passant or castling rights,
-        # you should also restore them here if make_move changed them.
+            # Restore en passant target and castling rights from snapshot
+            self.en_passant_target = move.get("en_passant_before", None)
+            self.castling_rights = {c: rights.copy() for c, rights in
+                                    move.get("castling_before", self.castling_rights).items()}
 
+        # Restore turn
+        self.current_turn = "white" if self.current_turn == "black" else "black"
 
     def is_empty(self, pos: tuple[int, int]) -> bool:
         return pos not in self.positions
