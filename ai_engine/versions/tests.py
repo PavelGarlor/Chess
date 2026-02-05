@@ -23,7 +23,7 @@ fen_position = "rnb1kbnr/pppqpppp/4P3/3p4/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
 agents: List[PlayerAI] = [
     SimpleMinimax("black", "SimpleMinimax", depth=2),
     SimpleMinimaxPruning("black", "SimpleMinimaxPruning", depth=2),
-    PruningMoveOrdering("black", "PruningMoveOrdering", depth=3),
+    PruningMoveOrdering("black", "PruningMoveOrdering", depth=4),
 ]
 
 
