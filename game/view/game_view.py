@@ -17,8 +17,8 @@ class GameView:
         self.message_font = pygame.font.SysFont("Arial", 64, bold=True)
 
         # Example UI fields
-        self.white_player : Player = SimpleMinimaxPruning("white" ,"Pavel")
-        self.black_player: Player = PruningMoveOrdering("black" ,"BOT2")
+        self.white_player : Player = SimpleMinimax("white" ,"Pavel",depth=2)
+        self.black_player: Player = PruningMoveOrdering("black" ,"BOT2",depth=3)
         self.message = None  # e.g. "Checkmate! White wins"
 
         self.promotion_active = False

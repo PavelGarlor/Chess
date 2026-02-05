@@ -135,7 +135,6 @@ class BoardState:
         if isinstance(moving_piece, Pawn):
             last_rank = 7 if moving_piece.color == "white" else 0
             if to_pos[1] == last_rank:
-                print("promotion situation detected")
                 return captured_piece, moves_done, "promotion"
 
         return captured_piece, moves_done, None

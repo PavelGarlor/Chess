@@ -10,12 +10,12 @@ PIECE_VALUES = {
     Bishop: 3,
     Rook: 5,
     Queen: 9,
-    King: float("inf")
+    King: 1000
 }
 
 
 class PruningMoveOrdering(PlayerAI):
-    def __init__(self, color, username, depth=2):
+    def __init__(self, color, username, depth=3):
         super().__init__(color, username)
         self.depth = depth
         self.positions_evaluated =0
@@ -42,7 +42,7 @@ class PruningMoveOrdering(PlayerAI):
             if score > best_score:
                 best_score = score
                 best_move = move
-        print(f'{__name__}: positions evaluated = {self.positions_evaluated}')
+        # print(f'{__name__}: positions evaluated = {self.positions_evaluated}')
         return best_move
 
     def minimax(self, board_state: BoardState, depth, is_maximizing, alpha, beta):

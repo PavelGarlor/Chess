@@ -72,7 +72,6 @@ class ChessController:
 
         # Animate each move in the moves_done list
         for move_done in moves_done:
-            print(move)
             move_piece = move_done["piece"]
             move_from = move_done["from"]
             move_to = move_done["to"]

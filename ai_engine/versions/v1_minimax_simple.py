@@ -10,7 +10,7 @@ PIECE_VALUES = {
     Bishop: 3,
     Rook: 5,
     Queen: 9,
-    King: float("inf")
+    King: 1000
 }
 
 
@@ -18,6 +18,7 @@ class SimpleMinimax(PlayerAI):
     def __init__(self, color, username, depth=2):
         super().__init__(color, username)
         self.depth = depth
+        self.positions_evaluated = 0
 
     def request_move(self, board_state: BoardState):
         """Return the best move using minimax (material evaluation)."""
@@ -75,6 +76,7 @@ class SimpleMinimax(PlayerAI):
 
     def evaluate_board(self, board_state: BoardState):
         """Material evaluation + terminal states."""
+        self.positions_evaluated +=1
         enemy_color = "black" if self.color == "white" else "white"
 
         # Check if AI is checkmated
