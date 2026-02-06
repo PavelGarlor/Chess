@@ -6,6 +6,7 @@ from ai_engine.versions.v2_minimax_prunning import SimpleMinimaxPruning
 from ai_engine.versions.v3_pruning_move_ordering import PruningMoveOrdering
 from game.models.pieces.piece import *
 from game.models.player import Player
+from game.models.real_player import RealPlayer
 from game.view.piece_view import PieceView
 
 
@@ -17,8 +18,8 @@ class GameView:
         self.message_font = pygame.font.SysFont("Arial", 64, bold=True)
 
         # Example UI fields
-        self.white_player : Player = SimpleMinimax("white" ,"Pavel",depth=2)
-        self.black_player: Player = PruningMoveOrdering("black" ,"BOT2",depth=3)
+        self.white_player : Player = RealPlayer("white" ,"Pavel")
+        self.black_player: Player = RealPlayer("black" ,"BOT2")
         self.message = None  # e.g. "Checkmate! White wins"
 
         self.promotion_active = False

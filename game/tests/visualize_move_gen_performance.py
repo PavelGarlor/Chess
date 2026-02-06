@@ -2,6 +2,7 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
+from matplotlib.ticker import MaxNLocator
 from scipy.interpolate import PchipInterpolator
 
 # --- CONFIG ---
@@ -41,6 +42,7 @@ def animate_tests_head_with_labels(tests):
         plt.style.use("dark_background")
 
     fig, ax = plt.subplots(figsize=(10, 6))
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_xlabel("Depth", fontsize=12)
     ax.set_ylabel("Time (s)", fontsize=12)
     ax.set_title("Perft Depth vs Time (Cinematic Camera)", fontsize=14)

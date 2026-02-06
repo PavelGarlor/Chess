@@ -44,7 +44,7 @@ def visualize_perft(
     test_id = max([item.get("test_id", 0) for item in all_results], default=0) + 1
 
     board = BoardState(initial_fen)
-    turn = board.current_turn
+    turn = board.is_whites_turn
 
     results = {
         "test_id": test_id,

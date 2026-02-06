@@ -9,23 +9,69 @@ class BoardState:
     SIZE = 8
 
     def __init__(self, fen: str):
-        self.current_turn = "white"
+        self.is_whites_turn = True
         self.fen = fen
         self.positions: dict[tuple[int, int], Piece] = {}
         self.castling_rights = {
             "white": {"K": True, "Q": True},
             "black": {"K": True, "Q": True},
         }
+
+        #bit maps
+        self.color_pieces: list[int] = [0, 0]  # [white, black]
+
         self._parse_fen()
         self.en_passant_target = None
+
 
 
     def get_piece(self, pos: tuple[int, int]) -> Piece | None:
         return self.positions.get(pos)
 
+    def visualize_bit_change(self,old_value: int, bit: int, total_bits: int = 64) -> None:
+        RED = "\033[91m"
+        GREEN = "\033[92m"
+        RESET = "\033[0m"
+
+        def format_bits(value, highlight=False):
+            bits = ""
+            for i in range(total_bits - 1, -1, -1):
+                bit_val = (value >> i) & 1
+                if i == bit:
+                    # highlight this bit
+                    if highlight:
+                        bits += f"{GREEN}{bit_val}{RESET}"
+                    else:
+                        bits += f"{RED}{bit_val}{RESET}"
+                else:
+                    bits += str(bit_val)
+            return bits
+
+        new_value = old_value | (1 << bit)
+
+        print("Before: ", format_bits(old_value, highlight=False))
+        print("After : ", format_bits(new_value, highlight=True))
+        print(f"\nChanged bit: {bit}")
+
     def set_piece(self, piece: Piece, pos: tuple[int, int]) -> None:
         piece.position = pos
         self.positions[pos] = piece
+
+
+        j, i = pos
+        pos_number = (i * self.SIZE) + j
+
+        color_id = 0 if piece.color == "white" else 1
+        old_val = self.color_pieces[color_id]
+
+        # visualize before and after
+        self.visualize_bit_change(old_val, pos_number, total_bits=self.SIZE * self.SIZE)
+        # flip the pos_number-th bit ON
+        self.color_pieces[color_id] |= (1 << pos_number)
+        self.visualize_bit_change(self.color_pieces[color_id], pos_number, total_bits=self.SIZE * self.SIZE)
+        print(pos_number, piece)
+
+
 
     def make_move(self, move: Move) -> tuple[Piece | None, list[dict], str | None]:
         """
@@ -135,7 +181,7 @@ class BoardState:
             self.en_passant_target = None
 
         # --- Toggle turn ---
-        self.current_turn = "white" if self.current_turn == "black" else "black"
+        self.is_whites_turn = not self.is_whites_turn
 
         # --- Attach snapshots for undo ---
         for m in moves_done:
@@ -188,7 +234,7 @@ class BoardState:
                                     move.get("castling_before", self.castling_rights).items()}
 
         # Restore turn
-        self.current_turn = "white" if self.current_turn == "black" else "black"
+        self.is_whites_turn = "white" if self.is_whites_turn == "black" else "black"
 
     def is_empty(self, pos: tuple[int, int]) -> bool:
         return pos not in self.positions
@@ -214,7 +260,7 @@ class BoardState:
             new_state.positions[pos] = new_piece
 
         # Copy other attributes
-        new_state.current_turn = self.current_turn
+        new_state.is_whites_turn = self.is_whites_turn
         new_state.castling_rights = deepcopy(self.castling_rights)
         new_state.en_passant_target = self.en_passant_target
 
@@ -262,7 +308,7 @@ class BoardState:
             col += 1
 
         # --- 2) Current turn ---
-        self.current_turn = "white" if turn_fen.lower() == "w" else "black"
+        self.is_whites_turn = turn_fen.lower() == "w"
 
         # --- 3) Castling rights ---
         self.castling_rights = {
@@ -331,7 +377,7 @@ class BoardState:
         # -------------------------------------------------
         # 2) TURN
         # -------------------------------------------------
-        turn_fen = "w" if self.current_turn == "white" else "b"
+        turn_fen = "w" if self.is_whites_turn  else "b"
 
         # -------------------------------------------------
         # 3) CASTLING RIGHTS
@@ -397,7 +443,7 @@ class BoardState:
 
     def get_legal_moves(self, pseudo_legal_moves: List[Move], state):
         legal_moves: List[Move] = []
-        enemy = "black" if state.current_turn == "white" else "white"
+        enemy = "black" if  state.is_whites_turn else "white"
 
         for move in pseudo_legal_moves:
             piece = move.piece

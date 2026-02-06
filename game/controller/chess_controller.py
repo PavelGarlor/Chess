@@ -34,7 +34,8 @@ class ChessController:
         piece = self.state.get_piece(grid_pos)
 
         # Selecting a piece
-        if piece and piece.color == self.state.current_turn:
+        is_turn = (piece.color == "white" and self.state.is_whites_turn) or (piece.color == "black" and not self.state.is_whites_turn)
+        if piece and is_turn:
             self.selected_pos = grid_pos
             self.view.highlight_selected = grid_pos
 
@@ -81,19 +82,16 @@ class ChessController:
             if promotion: self.view.replace_piece(move_to, promotion)
 
 
-        # Switch turn
-        self.state.current_turn= "black" if self.state.current_turn == "white" else "white"
-
         # After switching, check if the next player is AI
         next_player = (
-            self.game_view.white_player if self.state.current_turn == "white"
+            self.game_view.white_player if self.state.is_whites_turn
             else self.game_view.black_player
         )
 
         if isinstance(next_player, PlayerAI):
             self.start_ai_move(next_player)
         # Check game state
-        enemy = self.state.current_turn  # The side that must move now
+        enemy = self.state.is_whites_turn  # The side that must move now
 
         if self.state.is_checkmate(enemy):
             winner = "white" if enemy == "black" else "black"
@@ -182,7 +180,7 @@ class ChessController:
         self.view.replace_piece(pos, new_piece)
 
         # resume turn
-        self.state.current_turn = "black" if color == "white" else "white"
+        self.state.is_whites_turn = color != "white"
 
 
 
