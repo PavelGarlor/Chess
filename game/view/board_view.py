@@ -115,6 +115,9 @@ class BoardView:
         # Draw pieces
         self._draw_pieces(surface)
 
+        # Draw Bitmap Highlights
+        self._draw_bitmap_highlights(surface)
+
         # Draw coordinates
         self._draw_coordinates(surface)
         #
@@ -188,18 +191,91 @@ class BoardView:
         # -----------------------
         # Highlight enemy attacks
         # -----------------------
-        if not SHOW_ATTACKED_SQUARES: return
-        enemy_color = "black" if self.state.is_whites_turn else "white"
-        for x in range(self.SIZE):
-            for y in range(self.SIZE):
-                if self.state.is_square_attacked((x, y), enemy_color):
+        if  SHOW_ATTACKED_SQUARES:
+            enemy_color = "black" if self.state.is_whites_turn else "white"
+            for x in range(self.SIZE):
+                for y in range(self.SIZE):
+                    if self.state.is_square_attacked((x, y), enemy_color):
+                        rect = pygame.Rect(
+                            self.board_x + x * self.square_size,
+                            self.board_y + (self.SIZE - 1 - y) * self.square_size,
+                            self.square_size,
+                            self.square_size,
+                        )
+                        self._draw_transparent_rect(surface, (255, 0, 0), rect, 120)  # semi-transparent red
+
+
+
+    def _draw_bitmap_highlights(self, surface: pygame.Surface):
+        if SHOW_COLOR_BITMAP:
+            color_id = 0 if self.state.is_whites_turn else 1
+            bitmap = self.state.color_pieces[color_id]
+
+            font = pygame.font.SysFont("Arial", 22, bold=True)
+
+            for x in range(self.SIZE):
+                for y in range(self.SIZE):
+
+                    bit_index = y * self.SIZE + x
+                    bit_value = (bitmap >> bit_index) & 1  # 0 or 1
+
+                    # convert board coords to screen coords (flip Y)
+                    screen_y = self.SIZE - 1 - y
+
                     rect = pygame.Rect(
                         self.board_x + x * self.square_size,
-                        self.board_y + (self.SIZE - 1 - y) * self.square_size,
+                        self.board_y + screen_y * self.square_size,
                         self.square_size,
                         self.square_size,
                     )
-                    self._draw_transparent_rect(surface, (255, 0, 0), rect, 120)  # semi-transparent red
+
+                    # --- choose overlay color based on bit ---
+                    if bit_value == 1:
+                        color = (0, 255, 0)  # green
+                    else:
+                        color = (255, 0, 0)  # red
+
+                    # draw transparent overlay
+                    self._draw_transparent_rect(surface, color, rect, 100)
+
+                    # draw text (white)
+                    text_surface = font.render(str(bit_value), True, (255, 255, 255))
+                    text_rect = text_surface.get_rect(center=rect.center)
+                    surface.blit(text_surface, text_rect)
+        if SHOW_JOINED_BITMAP:
+            bitmap = self.state.all_pieces
+
+            font = pygame.font.SysFont("Arial", 22, bold=True)
+
+            for x in range(self.SIZE):
+                for y in range(self.SIZE):
+
+                    bit_index = y * self.SIZE + x
+                    bit_value = (bitmap >> bit_index) & 1  # 0 or 1
+
+                    # convert board coords to screen coords (flip Y)
+                    screen_y = self.SIZE - 1 - y
+
+                    rect = pygame.Rect(
+                        self.board_x + x * self.square_size,
+                        self.board_y + screen_y * self.square_size,
+                        self.square_size,
+                        self.square_size,
+                    )
+
+                    # --- choose overlay color based on bit ---
+                    if bit_value == 1:
+                        color = (0, 255, 0)  # green
+                    else:
+                        color = (255, 0, 0)  # red
+
+                    # draw transparent overlay
+                    self._draw_transparent_rect(surface, color, rect, 100)
+
+                    # draw text (white)
+                    text_surface = font.render(str(bit_value), True, (255, 255, 255))
+                    text_rect = text_surface.get_rect(center=rect.center)
+                    surface.blit(text_surface, text_rect)
 
     def _draw_transparent_rect(self,surface, color, rect, alpha):
         overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)

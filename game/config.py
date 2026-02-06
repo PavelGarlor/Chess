@@ -18,6 +18,9 @@ FONT_COLOR = (181, 179, 51)
 DISPLAY_FEN = True
 PRINT_FEN  = True
 SHOW_ATTACKED_SQUARES = False
+SHOW_COLOR_BITMAP = False
+SHOW_JOINED_BITMAP = True
+
 cooldown_time = 0.5           # hover before falling
 dark_factor = 0.2             # darkness while hovering
 x_offset = 15

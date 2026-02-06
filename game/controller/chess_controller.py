@@ -33,9 +33,8 @@ class ChessController:
 
         piece = self.state.get_piece(grid_pos)
 
-        # Selecting a piece
-        is_turn = (piece.color == "white" and self.state.is_whites_turn) or (piece.color == "black" and not self.state.is_whites_turn)
-        if piece and is_turn:
+
+        if piece and ((piece.color == "white" and self.state.is_whites_turn) or (piece.color == "black" and not self.state.is_whites_turn)):
             self.selected_pos = grid_pos
             self.view.highlight_selected = grid_pos
 
@@ -69,7 +68,7 @@ class ChessController:
     # ----------------------------
     def attempt_move(self, move :Move):
 
-        captured_piece, moves_done, status = self.state.make_move(move)
+        captured_piece, moves_done, status = self.state.make_move(move ,True)
 
         # Animate each move in the moves_done list
         for move_done in moves_done:
@@ -79,7 +78,7 @@ class ChessController:
             move_captured = move_done["captured"]
             promotion = move_done["promotes"]
             self.animate_move(move_piece, move_from, move_to, move_captured)
-            if promotion: self.view.replace_piece(move_to, promotion)
+            if promotion: self.view.replace_piece(move_from, promotion)
 
 
         # After switching, check if the next player is AI
@@ -91,7 +90,7 @@ class ChessController:
         if isinstance(next_player, PlayerAI):
             self.start_ai_move(next_player)
         # Check game state
-        enemy = self.state.is_whites_turn  # The side that must move now
+        enemy = "white" if self.state.is_whites_turn else "black" # The side that must move now
 
         if self.state.is_checkmate(enemy):
             winner = "white" if enemy == "black" else "black"
@@ -174,7 +173,7 @@ class ChessController:
 
         # Replace pawn with new piece
         new_piece = cls(color)
-        self.state.set_piece(new_piece,pos)
+        self.state.place_piece(new_piece, pos)
 
         # update view
         self.view.replace_piece(pos, new_piece)

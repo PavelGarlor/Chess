@@ -36,10 +36,10 @@ chessboard_y = (window_height - chessboard_size) / 2
 
 # Create game state
 board_state = BoardState(
-    fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    # fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     # fen="2bqkbnr/r1pppppp/ppn5/7Q/2BPP3/8/PPP2PPP/RNB1K1NR w KQk -"
     # fen="2bqkbnr/rPpppppp/8/p3n2Q/2BPP3/8/1PP2PPP/RNB1K1NR b KQk -"
-    # fen ="8/PPPPPPPP/8/K7/8/8/8/k7 w - - 0 1" #all pawns to promote
+    fen ="8/PPPPPPPP/8/K7/8/8/8/k7 w - - 0 1" #all pawns to promote
     # fen ="8/PPkPPPPP/8/8/8/8/2K5/8 b - -" #error pawns on last row capture
 
 )

@@ -16,10 +16,10 @@ class BoardState:
             "white": {"K": True, "Q": True},
             "black": {"K": True, "Q": True},
         }
-
-        #bit maps
+        # BITBOARDS
+        self.pieces_bitboard : list[int] #stores all the board  a single
         self.color_pieces: list[int] = [0, 0]  # [white, black]
-
+        self.all_pieces: int = 0
         self._parse_fen()
         self.en_passant_target = None
 
@@ -53,27 +53,38 @@ class BoardState:
         print("After : ", format_bits(new_value, highlight=True))
         print(f"\nChanged bit: {bit}")
 
-    def set_piece(self, piece: Piece, pos: tuple[int, int]) -> None:
+    def place_piece(self, piece: Piece, pos: tuple[int, int]) -> None:
         piece.position = pos
         self.positions[pos] = piece
+        j, i = pos
+        pos_number = (i * self.SIZE) + j
+        color_id = 0 if piece.color == "white" else 1
+        # flip the pos_number-th bit ON
+        self.color_pieces[color_id] |= (1 << pos_number)
+        self.all_pieces |= (1 << pos_number)
 
+    def remove_piece(self, pos: tuple[int, int], debug=False):
+        # safely get the piece (may be None)
+        piece = self.positions.pop(pos, None)
+        if piece is None:
+            return None  # <-- IMPORTANT
 
         j, i = pos
         pos_number = (i * self.SIZE) + j
 
         color_id = 0 if piece.color == "white" else 1
-        old_val = self.color_pieces[color_id]
 
-        # visualize before and after
-        self.visualize_bit_change(old_val, pos_number, total_bits=self.SIZE * self.SIZE)
-        # flip the pos_number-th bit ON
-        self.color_pieces[color_id] |= (1 << pos_number)
-        self.visualize_bit_change(self.color_pieces[color_id], pos_number, total_bits=self.SIZE * self.SIZE)
-        print(pos_number, piece)
+        # turn OFF the bit
+        self.color_pieces[color_id] &= ~(1 << pos_number)
+        self.all_pieces &= ~(1 << pos_number)
 
+        if debug:
+            self.visualize_bit_change(self.color_pieces[color_id], pos_number,
+                                      total_bits=self.SIZE * self.SIZE)
 
+        return piece
 
-    def make_move(self, move: Move) -> tuple[Piece | None, list[dict], str | None]:
+    def make_move(self, move: Move, debug=False) -> tuple[Piece | None, list[dict], str | None]:
         """
         Move a piece from `from_pos` to `to_pos`, handling:
         - Normal moves
@@ -82,7 +93,6 @@ class BoardState:
         - Castling
         - Castling rights
         - Promotions
-
         Returns:
             captured_piece: The main captured piece (or None)
             moves_done: List of dicts for all moves performed (for undo)
@@ -91,7 +101,8 @@ class BoardState:
         moves_done = []
         from_pos = move.piece.position
         to_pos = move.target_pos
-        moving_piece = self.positions.get(from_pos)
+
+        moving_piece = self.get_piece(from_pos)
         if moving_piece is None:
             return None, moves_done, None
 
@@ -137,37 +148,35 @@ class BoardState:
             # en passant capture
             direction = 1 if moving_piece.color == "white" else -1
             captured_square = (to_pos[0], to_pos[1] - direction)
-            captured_piece = self.positions.pop(captured_square, None)
+            captured_piece = self.remove_piece(captured_square, debug)
             if captured_piece:
                 moves_done.append({
                     "piece": captured_piece, "from": captured_square,
                     "to": captured_square, "captured": None, "promotes": None
                 })
         else:
-            captured_piece = self.positions.pop(to_pos, None)
+            captured_piece = self.remove_piece(to_pos, debug)
 
         # --- Handle castling rook move ---
         if is_castling:
-            rook_piece = self.positions.pop(rook_from, None)
+            rook_piece = self.remove_piece(rook_from, debug)
             if rook_piece:
-                rook_piece.position = rook_to
-                self.positions[rook_to] = rook_piece
+                self.place_piece(rook_piece, rook_to)
                 moves_done.append({
                     "piece": rook_piece, "from": rook_from, "to": rook_to,
                     "captured": None, "promotes": None
                 })
 
-        # --- Move the piece ---
-        self.positions.pop(from_pos, None)
-        moving_piece.position = to_pos
+        # --- Move the main piece ---
+        self.remove_piece(from_pos, debug)
         if move.promotion:
-            self.positions[to_pos] = move.promotion
+            self.place_piece(move.promotion, to_pos)
             moves_done.append({
                 "piece": moving_piece, "from": from_pos, "to": to_pos,
                 "captured": captured_piece, "promotes": move.promotion
             })
         else:
-            self.positions[to_pos] = moving_piece
+            self.place_piece(moving_piece, to_pos)
             moves_done.append({
                 "piece": moving_piece, "from": from_pos, "to": to_pos,
                 "captured": captured_piece, "promotes": None
@@ -304,7 +313,7 @@ class BoardState:
                 continue
             color = "white" if char.isupper() else "black"
             piece_class = piece_map[char.lower()]
-            self.set_piece(piece_class(color), (col, row))
+            self.place_piece(piece_class(color), (col, row))
             col += 1
 
         # --- 2) Current turn ---
