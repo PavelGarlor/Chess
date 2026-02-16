@@ -1,14 +1,15 @@
 from typing import Optional
 
 from ai_engine.versions.ai_player import PlayerAI
-from game.models.pieces.piece import *
+from game.models.pieces.pieceold import *
+from game.move_generation.move_generator import MoveGenerator
 from game.view.piece_view import PieceView
 from game.view.board_view import BoardView
-from game.models.board_state import BoardState
+from game.models.board import Board
 import threading
 
 class ChessController:
-    def __init__(self, board_state: BoardState, board_view: BoardView, game_view=None):
+    def __init__(self, board_state: Board, board_view: BoardView, game_view=None):
         self.state = board_state
         self.view = board_view
         self.game_view = game_view
@@ -34,12 +35,21 @@ class ChessController:
         piece = self.state.get_piece(grid_pos)
 
 
-        if piece and ((piece.color == "white" and self.state.is_whites_turn) or (piece.color == "black" and not self.state.is_whites_turn)):
+        if piece and ((piece.color == "white" and self.state.board_data.is_whites_turn) or (piece.color == "black" and not self.state.board_data.is_whites_turn)):
             self.selected_pos = grid_pos
             self.view.highlight_selected = grid_pos
 
-            pseudo_moves = piece.get_allowed_moves(grid_pos, self.state)
-            self.view.highlight_moves = self.state.get_legal_moves(pseudo_moves, self.state)
+            mg = MoveGenerator(self.state)
+
+            # Get all pseudo legal moves (for the correct side)
+            pseudo_moves = self.state.generate_all_legal_moves()
+
+            start_square = piece.position  # (row, col) or square index
+
+            # Filter moves so only moves *starting from this square* remain
+            pseudo_moves = [m for m in pseudo_moves if m.start_pos == start_square]
+
+            self.view.highlight_moves = self.state.get_legal_moves(pseudo_moves )
             return None
 
         # Trying to make a move
@@ -68,7 +78,7 @@ class ChessController:
     # ----------------------------
     def attempt_move(self, move :Move):
 
-        captured_piece, moves_done, status = self.state.make_move(move ,True)
+        captured_piece, moves_done, status = self.state.make_move(move, True)
 
         # Animate each move in the moves_done list
         for move_done in moves_done:
@@ -76,21 +86,32 @@ class ChessController:
             move_from = move_done["from"]
             move_to = move_done["to"]
             move_captured = move_done["captured"]
-            promotion = move_done["promotes"]
-            self.animate_move(move_piece, move_from, move_to, move_captured)
-            if promotion: self.view.replace_piece(move_from, promotion)
+            promotion = move_done.get("promotion")
 
+            # Animate main piece move (king, pawn, rook, etc.)
+            self.animate_move(move_piece, move_from, move_to, move_captured)
+
+            # Handle castling rook animation
+            if move_done.get("is_castling") and move_done.get("rook"):
+                rook = move_done["rook"]
+                rook_from = move_done["rook_from"]
+                rook_to = move_done["rook_to"]
+                self.animate_move(rook, rook_from, rook_to, None)
+
+            # Handle promotion replacement in UI
+            if promotion:
+                self.view.replace_piece(move_from, promotion)
 
         # After switching, check if the next player is AI
         next_player = (
-            self.game_view.white_player if self.state.is_whites_turn
+            self.game_view.white_player if self.state.board_data.is_whites_turn
             else self.game_view.black_player
         )
 
         if isinstance(next_player, PlayerAI):
             self.start_ai_move(next_player)
         # Check game state
-        enemy = "white" if self.state.is_whites_turn else "black" # The side that must move now
+        enemy = "white" if self.state.board_data.is_whites_turn else "black" # The side that must move now
 
         if self.state.is_checkmate(enemy):
             winner = "white" if enemy == "black" else "black"
@@ -108,6 +129,7 @@ class ChessController:
             if self.game_view:
                 self.game_view.set_message("Stalemate! Draw.")
 
+
         return
 
     # ----------------------------
@@ -115,10 +137,10 @@ class ChessController:
     # ----------------------------
     def animate_move(
         self,
-        piece: Piece,
+        piece: PieceOld,
         from_pos: Tuple[int, int],
         to_pos: Tuple[int, int],
-        captured: Optional[Piece],
+        captured: Optional[PieceOld],
     ):
         # Get PieceView
         piece_view: PieceView = self.view.piece_views[piece]
@@ -173,7 +195,7 @@ class ChessController:
 
         # Replace pawn with new piece
         new_piece = cls(color)
-        self.state.place_piece(new_piece, pos)
+        self.state.board_data.place_piece(new_piece, pos)
 
         # update view
         self.view.replace_piece(pos, new_piece)

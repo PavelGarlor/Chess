@@ -2,12 +2,13 @@ import time
 import json
 from datetime import datetime
 from game.models.board import Board
+import chess
 
-TEST_NAME = "v1 - using bitboards with pin rays"
-SAVE_TEST = True
+TEST_NAME = "Initial Version - depth comparison with Stockfish"
+SAVE_TEST = False
 UPDATE_EVERY = 1000
 
-# Correct perft reference values for the initial chess position
+# Known perft values
 KNOWN_PERFT = {
     1: 20,
     2: 400,
@@ -18,37 +19,47 @@ KNOWN_PERFT = {
 }
 
 
-def perft(board: Board, depth: int, turn: str, callback=None, print_moves=False):
+def perft(board: Board, depth: int, turn: str, callback=None, compare_with_stockfish=False):
     if depth == 0:
         if callback:
             callback(1)
         return 1
-
     moves = board.generate_all_legal_moves()
     total = 0
 
-    # PRINT ALL ROOT MOVES IF REQUESTED
-    if print_moves and depth == 1:
-        print("\nMoves at leaf depth:")
-        for m in moves:
-            print("   ", m)
+    # Compare with Stockfish at this node if requested
+    if compare_with_stockfish:
+        fen = board.board_data.fen  # Make sure Board has get_fen() returning correct FEN
+        your_uci = set([m.to_uci() for m in moves])
+        stockfish_uci = set([m.uci() for m in chess.Board(fen).legal_moves])
+
+        extra_moves = your_uci - stockfish_uci
+        missing_moves = stockfish_uci - your_uci
+
+        if extra_moves or missing_moves:
+            print(f"\n[Discrepancy at depth {depth} | FEN: {fen}]")
+            print("My moves:", sorted(your_uci))
+            print("st moves:", sorted(stockfish_uci))
+            if extra_moves:
+                print("Extra moves:", sorted(extra_moves))
+            if missing_moves:
+                print("Missing moves:", sorted(missing_moves))
 
     for move in moves:
         captured, moves_done, status = board.make_move(move)
         next_turn = "white" if turn == "black" else "black"
-        total += perft(board, depth - 1, next_turn, callback)
+        total += perft(board, depth - 1, next_turn, callback, compare_with_stockfish)
         board.undo_move(moves_done)
 
     return total
 
 
-def visualize_perft(
-        initial_fen: str,
-        max_depth: int = 4,
-        test_name: str = "DefaultTest",
-        file_name: str = "perft_results.json",
-        save_file: bool = False
-):
+def visualize_perft(initial_fen: str, max_depth: int = 4,
+                    compare_stockfish_depth: int = 2,
+                    test_name: str = "DefaultTest",
+                    file_name: str = "perft_results.json",
+                    save_file: bool = False):
+
     try:
         with open(file_name, "r") as f:
             all_results = json.load(f)
@@ -69,12 +80,7 @@ def visualize_perft(
     }
 
     for d in range(1, max_depth + 1):
-        # Adjust update interval dynamically
-        if d == 4:
-            update_every = 20000
-        else:
-            update_every = UPDATE_EVERY  # default 1000 or whatever you set
-
+        update_every = 20000 if d == 4 else UPDATE_EVERY
         start = time.perf_counter()
         nodes_so_far = 0
 
@@ -83,12 +89,12 @@ def visualize_perft(
             nodes_so_far += nodes
             if nodes_so_far % update_every == 0:
                 elapsed = time.perf_counter() - start
-                print(
-                    f"\rDepth {d} | Nodes: {nodes_so_far:,} | Elapsed: {elapsed:.2f}s",
-                    end="", flush=True
-                )
+                print(f"\rDepth {d} | Nodes: {nodes_so_far:,} | Elapsed: {elapsed:.2f}s", end="", flush=True)
 
-        total_nodes = perft(board, d, turn, callback=progress_callback)
+        # Compare with Stockfish at root or shallow depths
+        compare_node = d <= compare_stockfish_depth
+
+        total_nodes = perft(board, d, turn, callback=progress_callback, compare_with_stockfish=True)
         elapsed = time.perf_counter() - start
         nps = total_nodes / elapsed if elapsed > 0 else 0
 
@@ -97,11 +103,7 @@ def visualize_perft(
         if expected is not None:
             status = "  ✅" if total_nodes == expected else f"  ❌ (expected {expected:,})"
 
-        print(
-            f"\rDepth {d}: {total_nodes:,} nodes | "
-            f"Time: {elapsed:.4f}s | "
-            f"NPS: {nps:,.0f} nodes/sec{status}"
-        )
+        print(f"\rDepth {d}: {total_nodes:,} nodes | Time: {elapsed:.4f}s | NPS: {nps:,.0f} nodes/sec{status}")
 
         results["depths"].append({
             "depth": d,
@@ -120,9 +122,7 @@ def visualize_perft(
     print(f"\nResults saved to {file_name} (test_id={test_id})")
 
 
-
-
-
 if __name__ == "__main__":
     initial_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-    visualize_perft(initial_FEN, max_depth=5, test_name=TEST_NAME, save_file=SAVE_TEST)
+    visualize_perft(initial_FEN, max_depth=4, compare_stockfish_depth=2,
+                    test_name=TEST_NAME, save_file=SAVE_TEST)

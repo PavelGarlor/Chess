@@ -1,8 +1,8 @@
 import copy
 import time
 from ai_engine.versions.ai_player import PlayerAI
-from game.models.board_state import BoardState
-from game.models.pieces.piece import Pawn, Knight, Bishop, Rook, Queen, King
+from game.models.board import Board
+from game.models.pieces.pieceold import Pawn, Knight, Bishop, Rook, Queen, King
 
 PIECE_VALUES = {
     Pawn: 1,
@@ -20,9 +20,9 @@ class SimpleMinimaxPruning(PlayerAI):
         self.depth = depth
         self.positions_evaluated = 0
 
-    def request_move(self, board_state: BoardState):
+    def request_move(self, board_state: Board):
         self.positions_evaluated = 0  # reset counter at start
-        legal_moves = board_state.all_legal_moves(self.color)
+        legal_moves = board_state.generate_all_legal_moves(self.color)
         if not legal_moves:
             return None
 
@@ -41,12 +41,12 @@ class SimpleMinimaxPruning(PlayerAI):
         # print(f"[{self.username}] positions evaluated: {self.positions_evaluated}")
         return best_move
 
-    def minimax(self, board_state: BoardState, depth, is_maximizing, alpha, beta):
+    def minimax(self, board_state: Board, depth, is_maximizing, alpha, beta):
         if depth == 0:
             return self.evaluate_board(board_state)
 
         current_color = self.color if is_maximizing else ("black" if self.color == "white" else "white")
-        legal_moves = board_state.all_legal_moves(current_color)
+        legal_moves = board_state.generate_all_legal_moves(current_color)
 
         if not legal_moves:
             if board_state.is_checkmate(current_color):
@@ -79,7 +79,7 @@ class SimpleMinimaxPruning(PlayerAI):
                     break
             return min_eval
 
-    def evaluate_board(self, board_state: BoardState):
+    def evaluate_board(self, board_state: Board):
         self.positions_evaluated += 1
         enemy_color = "black" if self.color == "white" else "white"
 

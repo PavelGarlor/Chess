@@ -4,8 +4,7 @@ import pygame
 
 from ai_engine.versions.ai_player import PlayerAI
 from game.config import *
-from game.models.board_state import BoardState
-from game.models.move import Move
+from game.models.board import Board
 from game.view.board_view import BoardView
 from game.view.game_view import GameView
 from game.controller.chess_controller import ChessController
@@ -35,12 +34,17 @@ chessboard_x = (window_width - chessboard_size) / 2
 chessboard_y = (window_height - chessboard_size) / 2
 
 # Create game state
-board_state = BoardState(
+board_state = Board(
+    # fen="6K1/8/3P4/1kp3R1/8/8/8/8 b - - 0 1"
+    # fen="rnbqkbnr/pp3p1p/2ppp1p1/8/3P1B2/N2Q4/PPP1PPPP/R3KBNR w KQkq - 0 1"
     # fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    # fen ="rnbqkbnr/ppp1pppp/3p4/8/8/2P5/PP1PPPPP/RNBQKBNR w KQkq - 0 1"
     # fen="2bqkbnr/r1pppppp/ppn5/7Q/2BPP3/8/PPP2PPP/RNB1K1NR w KQk -"
     # fen="2bqkbnr/rPpppppp/8/p3n2Q/2BPP3/8/1PP2PPP/RNB1K1NR b KQk -"
-    fen ="8/PPPPPPPP/8/K7/8/8/8/k7 w - - 0 1" #all pawns to promote
+    # fen ="8/PPPPPPPP/8/K7/8/8/8/k7 w - - 0 1" #all pawns to promote
     # fen ="8/PPkPPPPP/8/8/8/8/2K5/8 b - -" #error pawns on last row capture
+    fen ="rnbqkbnr/ppp1pppp/3p4/8/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 1 2"
+
 
 )
 
@@ -88,11 +92,13 @@ while running:
     # --- H U M A N   M O V E ---
     if human_move is not None:
         controller.attempt_move(human_move)
+        game_view.add_move_to_panel(human_move)
 
     # --- A I   M O V E ---
     ai_move = controller.get_ai_move()
     if ai_move is not None:
         controller.attempt_move(ai_move)
+        game_view.add_move_to_panel(ai_move)
 
     # Continue updating + drawing
     board_view.update(now)

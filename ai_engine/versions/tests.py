@@ -1,6 +1,6 @@
 import time
 from typing import List
-from game.models.board_state import BoardState
+from game.models.board import Board
 from ai_engine.versions.ai_player import PlayerAI
 from ai_engine.versions.v1_minimax_simple import SimpleMinimax
 from ai_engine.versions.v2_minimax_prunning import SimpleMinimaxPruning
@@ -40,7 +40,7 @@ def monitor_progress(agent  : PlayerAI):
 # Run test
 # ---------------------------------------
 for agent in agents:
-    board_state = BoardState(fen=fen_position)
+    board_state = Board(fen=fen_position)
 
     agent.positions_evaluated = 0
     agent.searching = True

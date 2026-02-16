@@ -6,9 +6,9 @@ import pygame
 
 
 from game.config import *
-from game.models.board_state import BoardState
+from game.models.board import Board
 from game.models.move import Move
-from game.models.pieces.piece import Piece
+from game.models.pieces.pieceold import PieceOld
 from game.models.square import Square
 from game.view.piece_view import PieceView
 
@@ -24,7 +24,7 @@ class BoardView:
 
     def __init__(
         self,
-        board_state: BoardState,
+        board_state: Board,
         board_x: float,
         board_y: float,
         square_size: float,
@@ -44,7 +44,7 @@ class BoardView:
         self.elapsed_time = 0.0
 
         self.squares: list[Square] = []
-        self.piece_views: Dict[Piece, PieceView] = {}
+        self.piece_views: Dict[PieceOld, PieceView] = {}
         self.visible_square_count = 0 if animate_board else self.SIZE * self.SIZE
         self.last_spawn_time = time.time()
         self.fall_start_time: float | None = None
@@ -167,8 +167,8 @@ class BoardView:
             self._draw_transparent_rect(surface, (128, 255, 120), rect, 186)  # green
 
         # Highlight en passant target
-        if self.state.en_passant_target:
-            x, y = self.state.en_passant_target
+        if self.state.board_data.en_passant_target:
+            x, y = self.state.board_data.en_passant_target
             rect = pygame.Rect(
                 self.board_x + x * self.square_size,
                 self.board_y + (self.SIZE - 1 - y) * self.square_size,
@@ -192,7 +192,7 @@ class BoardView:
         # Highlight enemy attacks
         # -----------------------
         if  SHOW_ATTACKED_SQUARES:
-            enemy_color = "black" if self.state.is_whites_turn else "white"
+            enemy_color = "black" if self.state.board_data.is_whites_turn else "white"
             for x in range(self.SIZE):
                 for y in range(self.SIZE):
                     if self.state.is_square_attacked((x, y), enemy_color):
@@ -207,11 +207,10 @@ class BoardView:
 
 
     def _draw_bitmap_highlights(self, surface: pygame.Surface):
+        font = pygame.font.SysFont("Arial", 22, bold=True)
         if SHOW_COLOR_BITMAP:
-            color_id = 0 if self.state.is_whites_turn else 1
-            bitmap = self.state.color_pieces[color_id]
-
-            font = pygame.font.SysFont("Arial", 22, bold=True)
+            color_id = 0 if self.state.board_data.is_whites_turn else 1
+            bitmap = self.state.board_data.color_pieces[color_id]
 
             for x in range(self.SIZE):
                 for y in range(self.SIZE):
@@ -243,10 +242,7 @@ class BoardView:
                     text_rect = text_surface.get_rect(center=rect.center)
                     surface.blit(text_surface, text_rect)
         if SHOW_JOINED_BITMAP:
-            bitmap = self.state.all_pieces
-
-            font = pygame.font.SysFont("Arial", 22, bold=True)
-
+            bitmap = self.state.board_data.all_pieces
             for x in range(self.SIZE):
                 for y in range(self.SIZE):
 
@@ -276,6 +272,38 @@ class BoardView:
                     text_surface = font.render(str(bit_value), True, (255, 255, 255))
                     text_rect = text_surface.get_rect(center=rect.center)
                     surface.blit(text_surface, text_rect)
+        if SHOW_PIECE_BITMAPS:
+            # loop only over selected piece bitboards
+            for piece_id in BITBOARDS_TO_SHOW:
+
+                piece_index = self.state.PIECE_TO_INDEX[piece_id]
+                piece_bb = self.state.board_data.pieces_bitboard[piece_index]
+
+                for x in range(self.SIZE):
+                    for y in range(self.SIZE):
+                        bit_index = y * self.SIZE + x
+                        if (piece_bb >> bit_index) & 1 == 0:
+                            continue  # skip empty squares
+
+                        screen_y = self.SIZE - 1 - y
+                        rect = pygame.Rect(
+                            self.board_x + x * self.square_size,
+                            self.board_y + screen_y * self.square_size,
+                            self.square_size,
+                            self.square_size,
+                        )
+
+                        # single overlay color (green)
+                        color = (0, 255, 0)
+                        self._draw_transparent_rect(surface, color, rect, 100)
+
+                        # draw the integer value of the piece
+                        piece = self.state.board_data.positions.get((x, y))
+
+                        if piece is not None:
+                            text_surface = font.render(str( piece.get_piece_id()), True, (0, 0, 0))
+                            text_rect = text_surface.get_rect(center=rect.center)
+                            surface.blit(text_surface, text_rect)
 
     def _draw_transparent_rect(self,surface, color, rect, alpha):
         overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
@@ -307,11 +335,11 @@ class BoardView:
     # ------------------------------------------------------------------
     # EVENTS
     # ------------------------------------------------------------------
-    def on_piece_moved(self, piece: Piece, from_pos: Tuple[int, int], to_pos: Tuple[int, int]) -> None:
+    def on_piece_moved(self, piece: PieceOld, from_pos: Tuple[int, int], to_pos: Tuple[int, int]) -> None:
         view = self.piece_views[piece]
         view.animate_to(self.grid_to_pixel(*to_pos))
 
-    def on_piece_captured(self, piece: Piece) -> None:
+    def on_piece_captured(self, piece: PieceOld) -> None:
         view = self.piece_views.pop(piece, None)
         if view:
             view.start_capture()
@@ -356,7 +384,7 @@ class BoardView:
         window_width, window_height = pygame.display.get_window_size()
         padding = self.square_size * 2
 
-        for pos, piece in self.state.positions.items():
+        for pos, piece in self.state.board_data.positions.items():
             target_pixel = self.grid_to_pixel(*pos)
 
             # Random spawn outside screen

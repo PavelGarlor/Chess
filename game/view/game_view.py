@@ -1,12 +1,11 @@
 import pygame
 
-
-from ai_engine.versions.v1_minimax_simple import SimpleMinimax
 from ai_engine.versions.v2_minimax_prunning import SimpleMinimaxPruning
 from ai_engine.versions.v3_pruning_move_ordering import PruningMoveOrdering
-from game.models.pieces.piece import *
+from game.models.pieces.pieceold import *
 from game.models.player import Player
 from game.models.real_player import RealPlayer
+from game.view.move_list_panel import MoveListPanel
 from game.view.piece_view import PieceView
 
 
@@ -18,27 +17,33 @@ class GameView:
         self.message_font = pygame.font.SysFont("Arial", 64, bold=True)
 
         # Example UI fields
-        self.white_player : Player = RealPlayer("white" ,"Pavel")
-        self.black_player: Player = RealPlayer("black" ,"BOT2")
+        self.white_player: Player = RealPlayer("white", "Pavel")
+        self.black_player: Player = RealPlayer("black", "BOT2")
+        # self.white_player : Player = PruningMoveOrdering("white" ,"Pavel", depth=3)
+        # self.black_player: Player = PruningMoveOrdering("black" ,"BOT2", depth=2)
         self.message = None  # e.g. "Checkmate! White wins"
 
         self.promotion_active = False
         self.promotion_color = None
         self.promotion_position = None
+        # Move list panel
+        self.move_panel = MoveListPanel(screen)
 
     def set_message(self, msg: str):
         self.message = msg
 
+    def add_move_to_panel(self, move):
+        """Add a move to the right-hand panel."""
+        self.move_panel.add_move(move.to_uci())
+
     def draw(self):
-        # Draw background UI (timers, names, etc)
+        # Draw board and UI
         self._draw_player_names()
-
-        # Draw board inside UI
         self.board_view.draw(self.screen)
-
-        # winner message
         self._draw_message()
-
+        self.move_panel.draw()
+        # if self.promotion_active:
+        #     self._draw_promotion_menu()
         # if self.promotion_active:
         #     self._draw_promotion_menu()
 

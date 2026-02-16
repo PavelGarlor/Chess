@@ -4,7 +4,7 @@ import pygame
 import os
 
 from game.helpers import animation as anim
-from game.models.pieces.piece import Piece
+from game.models.pieces.pieceold import PieceOld
 
 
 class PieceView:
@@ -16,7 +16,7 @@ class PieceView:
     def __init__(
         self,
         *,
-        piece: Piece,
+        piece: PieceOld,
         target_position: Tuple[float, float],
         square_size: float,
         animate: bool = True,
@@ -53,7 +53,7 @@ class PieceView:
     # ----------------------------
     # IMAGE LOADING
     # ----------------------------
-    def _load_and_scale_image(self, piece: Piece) -> pygame.Surface:
+    def _load_and_scale_image(self, piece: PieceOld) -> pygame.Surface:
         filename = f"{piece.color[0]}{piece.SYMBOL}.png"
         path = os.path.join(self.ASSETS_PATH, filename)
 

@@ -1,8 +1,8 @@
 import copy
 import time
 from ai_engine.versions.ai_player import PlayerAI
-from game.models.board_state import BoardState
-from game.models.pieces.piece import Pawn, Knight, Bishop, Rook, Queen, King
+from game.models.board import Board
+from game.models.pieces.pieceold import Pawn, Knight, Bishop, Rook, Queen, King
 
 PIECE_VALUES = {
     Pawn: 1,
@@ -20,9 +20,9 @@ class SimpleMinimax(PlayerAI):
         self.depth = depth
         self.positions_evaluated = 0
 
-    def request_move(self, board_state: BoardState):
+    def request_move(self, board_state: Board):
         """Return the best move using minimax (material evaluation)."""
-        legal_moves = board_state.all_legal_moves(self.color)
+        legal_moves = board_state.generate_all_legal_moves(self.color)
         if not legal_moves:
             return None  # checkmate or stalemate
 
@@ -36,7 +36,7 @@ class SimpleMinimax(PlayerAI):
             # simulate move on the copy
             captured, moves_done, status = board_copy.make_move(move)
             score = self.minimax(board_copy, self.depth - 1, False)
-            board_copy.undo_move(moves_done, captured)
+            board_copy.undo_move(moves_done)
 
             if score > best_score:
                 best_score = score
@@ -44,13 +44,13 @@ class SimpleMinimax(PlayerAI):
 
         return best_move
 
-    def minimax(self, board_state: BoardState, depth, is_maximizing):
+    def minimax(self, board_state: Board, depth, is_maximizing):
         """Simple depth-limited minimax with material evaluation."""
         if depth == 0:
             return self.evaluate_board(board_state)
 
         current_color = self.color if is_maximizing else ("black" if self.color == "white" else "white")
-        legal_moves = board_state.all_legal_moves(current_color)
+        legal_moves = board_state.generate_all_legal_moves(current_color)
         if not legal_moves:
             # checkmate or stalemate
             if board_state.is_checkmate(current_color):
@@ -74,7 +74,7 @@ class SimpleMinimax(PlayerAI):
                 min_eval = min(min_eval, eval)
             return min_eval
 
-    def evaluate_board(self, board_state: BoardState):
+    def evaluate_board(self, board_state: Board):
         """Material evaluation + terminal states."""
         self.positions_evaluated +=1
         enemy_color = "black" if self.color == "white" else "white"

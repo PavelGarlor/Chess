@@ -1,8 +1,9 @@
 import copy
 import time
 from ai_engine.versions.ai_player import PlayerAI
-from game.models.board_state import BoardState
-from game.models.pieces.piece import Pawn, Knight, Bishop, Rook, Queen, King
+from game.models.board import Board
+from game.models.piece import Piece
+from game.models.pieces.pieceold import Pawn, Knight, Bishop, Rook, Queen, King
 
 PIECE_VALUES = {
     Pawn: 1,
@@ -20,9 +21,9 @@ class PruningMoveOrdering(PlayerAI):
         self.depth = depth
         self.positions_evaluated =0
 
-    def request_move(self, board_state: BoardState):
+    def request_move(self, board_state: Board):
         """Return the best move using minimax with alpha-beta pruning + move ordering."""
-        legal_moves = board_state.all_legal_moves(self.color)
+        legal_moves = board_state.generate_all_legal_moves()
         if not legal_moves:
             return None  # checkmate or stalemate
 
@@ -37,7 +38,7 @@ class PruningMoveOrdering(PlayerAI):
         for move in legal_moves:
             captured, moves_done, status = board_copy.make_move(move)
             score = self.minimax(board_copy, self.depth - 1, False, -float("inf"), float("inf"))
-            board_copy.undo_move(moves_done, captured)
+            board_copy.undo_move(moves_done)
 
             if score > best_score:
                 best_score = score
@@ -45,12 +46,12 @@ class PruningMoveOrdering(PlayerAI):
         # print(f'{__name__}: positions evaluated = {self.positions_evaluated}')
         return best_move
 
-    def minimax(self, board_state: BoardState, depth, is_maximizing, alpha, beta):
+    def minimax(self, board_state: Board, depth, is_maximizing, alpha, beta):
         if depth == 0:
             return self.evaluate_board(board_state)
 
         current_color = self.color if is_maximizing else ("black" if self.color == "white" else "white")
-        legal_moves = board_state.all_legal_moves(current_color)
+        legal_moves = board_state.generate_all_legal_moves()
 
         if not legal_moves:
             if board_state.is_checkmate(current_color):
@@ -65,7 +66,7 @@ class PruningMoveOrdering(PlayerAI):
             for move in legal_moves:
                 captured, moves_done, status = board_state.make_move(move)
                 eval = self.minimax(board_state, depth - 1, False, alpha, beta)
-                board_state.undo_move(moves_done, captured)
+                board_state.undo_move(moves_done)
                 max_eval = max(max_eval, eval)
                 alpha = max(alpha, eval)
                 if beta <= alpha:
@@ -76,14 +77,14 @@ class PruningMoveOrdering(PlayerAI):
             for move in legal_moves:
                 captured, moves_done, status = board_state.make_move(move)
                 eval = self.minimax(board_state, depth - 1, True, alpha, beta)
-                board_state.undo_move(moves_done, captured)
+                board_state.undo_move(moves_done,)
                 min_eval = min(min_eval, eval)
                 beta = min(beta, eval)
                 if beta <= alpha:
                     break  # alpha cut-off
             return min_eval
 
-    def evaluate_board(self, board_state: BoardState):
+    def evaluate_board(self, board_state: Board):
         self.positions_evaluated+=1
         enemy_color = "black" if self.color == "white" else "white"
 
@@ -100,7 +101,7 @@ class PruningMoveOrdering(PlayerAI):
         if board_state.is_in_check(enemy_color):
             score += 0.5
 
-        for pos, piece in board_state.positions.items():
+        for pos, piece in board_state.board_data.positions.items():
             value = PIECE_VALUES.get(type(piece), 0)
             if piece.color == self.color:
                 score += value
@@ -109,7 +110,7 @@ class PruningMoveOrdering(PlayerAI):
 
         return score
 
-    def order_moves(self, board_state: BoardState, moves, color):
+    def order_moves(self, board_state: Board, moves, color):
         """
         Simple move ordering:
         - Captures first (MVV-LVA: Most Valuable Victim - Least Valuable Attacker)
@@ -117,11 +118,12 @@ class PruningMoveOrdering(PlayerAI):
         """
         def move_value(move):
             target_piece = board_state.get_piece(move.target_pos)
+            moving_piece = board_state.get_piece(move.start_pos)
             if target_piece:
                 # Capture move: give high priority if capturing valuable piece
-                return 10 * PIECE_VALUES[type(target_piece)] - PIECE_VALUES.get(type(move.piece), 0)
+                return 10 * PIECE_VALUES[type(target_piece)] - PIECE_VALUES.get(type(moving_piece), 0)
             else:
                 # Non-capture: lower priority, slight bonus for moving high-value piece
-                return PIECE_VALUES.get(type(move.piece), 0)
+                return PIECE_VALUES.get(type(moving_piece), 0)
 
         return sorted(moves, key=move_value, reverse=True)
