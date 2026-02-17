@@ -3,7 +3,7 @@ import unittest
 from game.models.board import Board
 
 
-class PinnedPawnTests(unittest.TestCase):
+class IllegalTests(unittest.TestCase):
 
     def assertMoveNotGenerated(self, legal_moves, illegal_uci, message):
         """
@@ -97,12 +97,46 @@ class PinnedPawnTests(unittest.TestCase):
         # Check if any illegal move starts with c2
         illegal_moves = [uci for uci in uci_moves if uci.startswith("c2")]
 
+    def test_not_illegal_move_king_on_check(self):
+        """
+        Bishop on c2 is pinned by black queen on d7 against the king on d1.
+        Therefore the bishop must have zero legal moves.
+
+        FEN: k7/3q4/8/8/8/8/7R/3K4 w - - 0 1
+        """
+        fen = "k7/3q4/8/8/8/8/7R/3K4 w - - 0 1"
+        board = Board(fen)
+        legal_moves = board.generate_all_legal_moves()
+
+        # Convert to UCI
+        uci_moves = sorted(m.to_uci() for m in legal_moves)
+
+        # Expected legal moves
+        expected_moves = sorted([
+            "h2e2",
+            "d1c1", "d1c2",
+            "d1e1", "d1e2",
+        ])
+
+        # Ensure no move starts with c2
+        illegal_moves = [uci for uci in uci_moves if uci.startswith("c2")]
         if illegal_moves:
             self.fail(
                 "Pinned bishop on c2 generated illegal moves:\n"
                 f"  Illegal: {illegal_moves}\n"
                 f"  All moves: {uci_moves}"
             )
+
+        # Ensure exact match to expected legal moves
+        self.assertEqual(
+            uci_moves,
+            expected_moves,
+            msg=(
+                "Legal moves do not match expected.\n"
+                f"  Expected: {expected_moves}\n"
+                f"  Got:      {uci_moves}"
+            )
+        )
 
 
 if __name__ == "__main__":

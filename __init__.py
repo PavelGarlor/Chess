@@ -43,7 +43,8 @@ board_state = Board(
     # fen="2bqkbnr/rPpppppp/8/p3n2Q/2BPP3/8/1PP2PPP/RNB1K1NR b KQk -"
     # fen ="8/PPPPPPPP/8/K7/8/8/8/k7 w - - 0 1" #all pawns to promote
     # fen ="8/PPkPPPPP/8/8/8/8/2K5/8 b - -" #error pawns on last row capture
-    fen ="rnbqkbnr/ppp1pppp/3p4/8/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 1 2"
+    # fen ="rnbqkbnr/ppp1pppp/3p4/8/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 1 2"
+    fen ="k7/3q4/8/8/8/8/7R/3K4 w - - 0 1"
 
 
 )
